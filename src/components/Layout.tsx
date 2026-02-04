@@ -37,7 +37,6 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'cleaning', label: 'Cleaning', icon: Calendar },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'logs', label: 'System Logs', icon: ShieldCheck },
-    { id: 'approvals', label: 'User Approvals', icon: UserCheck },
   ];
 
   const studentMenuItems = [

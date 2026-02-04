@@ -15,7 +15,6 @@ import { CleaningSchedule } from './components/CleaningSchedule';
 import { AnnouncementsManagement } from './components/AnnouncementsManagement';
 import RoomsManagement from './components/RoomsManagement';
 import { SystemLogs } from './components/SystemLogs';
-import UserApprovals from './components/UserApprovals';
 
 
 function AppContent() {
@@ -75,8 +74,6 @@ function AppContent() {
           return <AnnouncementsManagement />;
         case 'logs':
           return <SystemLogs />;
-        case 'approvals':
-          return <UserApprovals />;
         default:
           return <AdminDashboard />;
       }

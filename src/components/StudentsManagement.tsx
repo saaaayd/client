@@ -35,26 +35,26 @@ interface Attendance {
 interface Student {
   _id: string; // Mongo ID is _id
   id?: string; // Virtual might exist
-  student_id?: string;
+  studentId?: string;
   first_name?: string;
   last_name?: string;
   middle_initial?: string;
   name: string;
   email: string;
-  student_profile?: {
-    room_id?: number;
-    room_number: string;
-    phone_number: string;
-    emergency_contact_name: string;
-    emergency_contact_phone: string;
-    enrollment_date: string;
+  studentProfile?: {
+    room_id?: string; // We might want to persist this in backend User schema too if used for editing
+    roomNumber: string;
+    phoneNumber: string;
+    emergencyContactName: string;
+    emergencyContactPhone: string;
+    enrollmentDate: string;
     status: 'active' | 'inactive';
   };
 }
 
 interface Room {
-  id: number;
-  code: string;
+  _id: string;
+  roomNumber: string;
   capacity: number;
   students_count: number;
 }
@@ -85,7 +85,7 @@ export function StudentsManagement() {
     last_name: '',
     middle_initial: '',
     email: '',
-    room_id: 0,
+    room_id: '',
     phone_number: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
@@ -113,7 +113,7 @@ export function StudentsManagement() {
   const fetchRooms = async () => {
     try {
       const res = await axios.get('/api/rooms');
-      setRooms(res.data);
+      setRooms(res.data); // Backend returns _id and roomNumber
     } catch (err) {
       console.error('Error fetching rooms:', err);
     }
@@ -127,17 +127,17 @@ export function StudentsManagement() {
       const lastName = student.last_name || nameParts.slice(1).join(' ') || '';
 
       setFormData({
-        student_id: student.student_id || student.studentId || '', // Handle camelCase from backend if applicable
+        student_id: student.studentId || student.student_id || '', // Handle camelCase from backend if applicable
         first_name: firstName,
         last_name: lastName,
         middle_initial: student.middle_initial || '',
         email: student.email,
-        // Safely access nested profile data, fallback to 0 if missing
-        room_id: student.student_profile?.room_id || 0,
-        phone_number: student.student_profile?.phone_number || '',
-        emergency_contact_name: student.student_profile?.emergency_contact_name || '',
-        emergency_contact_phone: student.student_profile?.emergency_contact_phone || '',
-        status: student.student_profile?.status || 'active'
+        // Safely access nested profile data, fallback to empty string if missing
+        room_id: student.studentProfile?.room_id?.toString() || '',
+        phone_number: student.studentProfile?.phoneNumber || '',
+        emergency_contact_name: student.studentProfile?.emergencyContactName || '',
+        emergency_contact_phone: student.studentProfile?.emergencyContactPhone || '',
+        status: student.studentProfile?.status || 'active'
       });
     } else {
       setEditingId(null);
@@ -176,11 +176,13 @@ export function StudentsManagement() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.first_name || !formData.last_name || !formData.student_id || !formData.room_id) {
+    // Room is optional for creation/inactive status if we want, but usually required. 
+    // If room_id is string, !room_id checks for empty string.
+    if (!formData.first_name || !formData.last_name || !formData.student_id) {
       Swal.fire({
         icon: 'warning',
         title: 'Missing Fields',
-        text: 'Please fill in Student ID, First Name, Last Name, and Room.',
+        text: 'Please fill in Student ID, First Name, and Last Name.',
         confirmButtonColor: '#001F3F'
       });
       return;
@@ -237,6 +239,72 @@ export function StudentsManagement() {
     }
   };
 
+  const handleApprove = async (student: Student) => {
+    const result = await Swal.fire({
+      title: 'Approve Student?',
+      text: `This will activate ${student.name}'s account.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#001F3F',
+      confirmButtonText: 'Yes, Approve'
+    });
+
+    if (result.isConfirmed) {
+      setLoading(true);
+      try {
+        await axios.put(`/api/students/${student._id}`, {
+          status: 'active'
+        });
+        Swal.fire({
+          icon: 'success',
+          title: 'Approved',
+          text: 'Student account is now active.',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        fetchStudents();
+      } catch (error: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.response?.data?.message || 'Failed to approve student.',
+          confirmButtonColor: '#d33'
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Reject Student?',
+      text: "This will remove the registration request permanently.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, Reject'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`/api/students/${id}`);
+        Swal.fire({
+          title: 'Rejected',
+          text: 'Student request has been removed.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        fetchStudents();
+        fetchRooms();
+      } catch (error) {
+        Swal.fire('Error', 'Failed to reject student.', 'error');
+      }
+    }
+  };
+
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -266,25 +334,49 @@ export function StudentsManagement() {
     }
   };
 
-  const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.student_profile?.room_number?.includes(searchTerm) ||
-    s.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [viewMode, setViewMode] = useState<'active' | 'pending'>('active');
 
-  if (!isAdmin) {
-    return (
-      <div className="p-8 text-center bg-gray-50 rounded-lg border">
-        <h3 className="text-lg font-bold text-gray-700">Access Denied</h3>
-        <p className="text-gray-500">Only administrators can manage student records.</p>
-      </div>
-    );
-  }
+  const filtered = students.filter((s) => {
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.studentProfile?.roomNumber?.includes(searchTerm) ||
+      (s.studentId || s.student_id)?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesTab = viewMode === 'active'
+      ? s.studentProfile?.status === 'active'
+      : s.studentProfile?.status !== 'active'; // Inactive is pending
+
+    return matchesSearch && matchesTab;
+  });
+
+  // ... (isAdmin check)
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Students Management</h1>
+      </div>
+
+      {/* View Mode Tabs */}
+      <div className="flex gap-4 border-b border-gray-200 mb-6">
+        <button
+          className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${viewMode === 'active' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          onClick={() => setViewMode('active')}
+        >
+          Active Students
+        </button>
+        <button
+          className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${viewMode === 'pending' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          onClick={() => setViewMode('pending')}
+        >
+          Pending Approval
+          {students.filter(s => s.studentProfile?.status === 'inactive').length > 0 && (
+            <span className="ml-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+              {students.filter(s => s.studentProfile?.status === 'inactive').length}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-4">
@@ -317,9 +409,9 @@ export function StudentsManagement() {
                   <td className="px-6 py-4">
                     <div className="font-semibold text-gray-900">{student.name}</div>
                     <div className="flex items-center gap-2 mt-1">
-                      {student.student_id && (
+                      {(student.studentId || student.student_id) && (
                         <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
-                          <Hash className="w-3 h-3" /> {student.student_id}
+                          <Hash className="w-3 h-3" /> {student.studentId || student.student_id}
                         </span>
                       )}
                       <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -329,34 +421,47 @@ export function StudentsManagement() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="font-mono text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                      {student.student_profile?.room_number || 'No Room'}
+                      {student.studentProfile?.roomNumber || 'No Room'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {student.student_profile?.phone_number ? (
+                    {student.studentProfile?.phoneNumber ? (
                       <div className="flex items-center gap-2">
-                        <Phone className="w-3 h-3" /> {student.student_profile.phone_number}
+                        <Phone className="w-3 h-3" /> {student.studentProfile.phoneNumber}
                       </div>
                     ) : (
                       <span className="text-xs text-gray-400 italic">Not set</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${student.student_profile?.status === 'active'
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${student.studentProfile?.status === 'active'
                       ? 'bg-green-50 text-green-700 border-green-200'
-                      : 'bg-red-50 text-red-700 border-red-200'
+                      : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                       }`}>
-                      {student.student_profile?.status === 'active' ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
-                      {student.student_profile?.status === 'active' ? 'Active' : 'Inactive'}
+                      {student.studentProfile?.status === 'active' ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
+                      {student.studentProfile?.status === 'active' ? 'Active' : 'Pending Approval'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openModal(student)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(student._id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {viewMode === 'pending' ? (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => handleApprove(student)} className="h-8 w-8 text-green-600 hover:bg-green-50" title="Approve">
+                          <UserCheck className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleReject(student._id)} className="h-8 w-8 text-red-500 hover:bg-red-50" title="Reject">
+                          <UserX className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => openModal(student)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(student._id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))
@@ -365,7 +470,7 @@ export function StudentsManagement() {
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <Search className="w-8 h-8 opacity-20" />
-                    <p>No students found matching your search.</p>
+                    <p>No {viewMode} students found.</p>
                   </div>
                 </td>
               </tr>
@@ -400,75 +505,85 @@ export function StudentsManagement() {
 
               {/* Personal Information Section */}
               <div className="col-span-1 md:col-span-2">
-                <h4 className="text-sm uppercase tracking-wider text-gray-500 font-bold mb-3 border-b pb-1">Personal Information</h4>
+                <h4 className="text-sm uppercase tracking-wider text-gray-500 font-bold mb-3 border-b pb-1">
+                  {editingId ? 'Student Information' : 'Personal Information'}
+                </h4>
               </div>
 
-              <div>
-                <Label>First Name <span className="text-red-500">*</span></Label>
-                <Input
-                  value={formData.first_name}
-                  onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                  placeholder="e.g. Juan"
-                  disabled={!!editingId} // Read-only in edit mode
-                  className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
-              <div>
-                <Label>Middle Initial</Label>
-                <Input
-                  value={formData.middle_initial}
-                  onChange={e => setFormData({ ...formData, middle_initial: e.target.value })}
-                  placeholder="e.g. D"
-                  maxLength={2}
-                  disabled={!!editingId} // Read-only in edit mode
-                  className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <Label>Last Name <span className="text-red-500">*</span></Label>
-                <Input
-                  value={formData.last_name}
-                  onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                  placeholder="e.g. Dela Cruz"
-                  disabled={!!editingId} // Read-only in edit mode
-                  className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
+              {!editingId && (
+                <>
+                  <div>
+                    <Label>First Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      value={formData.first_name}
+                      onChange={e => setFormData({ ...formData, first_name: e.target.value })}
+                      placeholder="e.g. Juan"
+                    />
+                  </div>
+                  <div>
+                    <Label>Middle Initial</Label>
+                    <Input
+                      value={formData.middle_initial}
+                      onChange={e => setFormData({ ...formData, middle_initial: e.target.value })}
+                      placeholder="e.g. D"
+                      maxLength={2}
+                    />
+                  </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <Label>Last Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      value={formData.last_name}
+                      onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                      placeholder="e.g. Dela Cruz"
+                    />
+                  </div>
 
-              <div className="col-span-1 md:col-span-2">
-                <Label>Email Address <span className="text-red-500">*</span></Label>
-                <Input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="student@school.edu"
-                  disabled={!!editingId} // Read-only in edit mode
-                  className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
+                  <div className="col-span-1 md:col-span-2">
+                    <Label>Email Address <span className="text-red-500">*</span></Label>
+                    <Input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="student@school.edu" />
+                  </div>
+                </>
+              )}
+
+              {/* For Editing Mode - Show Name as Read-only Text */}
+              {editingId && (
+                <div className="col-span-1 md:col-span-2 mb-2">
+                  <div className="p-3 bg-gray-50 rounded border border-gray-100">
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Student Name</p>
+                    <p className="text-lg font-bold text-gray-800">{formData.first_name} {formData.middle_initial ? formData.middle_initial + '. ' : ''} {formData.last_name}</p>
+                    <p className="text-sm text-gray-500 mt-1">{formData.email}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">ID: {formData.student_id}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Academic & Dorm Section */}
               <div className="col-span-1 md:col-span-2 mt-2">
                 <h4 className="text-sm uppercase tracking-wider text-gray-500 font-bold mb-3 border-b pb-1">Dormitory Details</h4>
               </div>
 
-              <div>
-                <Label>Student ID <span className="text-red-500">*</span></Label>
-                <Input
-                  value={formData.student_id}
-                  onChange={e => setFormData({ ...formData, student_id: e.target.value })}
-                  placeholder="e.g. 2025-001"
-                  disabled={!!editingId} // Read-only in edit mode
-                  className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
-              <div>
+              {!editingId && (
+                <div>
+                  <Label>Student ID <span className="text-red-500">*</span></Label>
+                  <Input
+                    value={formData.student_id}
+                    onChange={e => setFormData({ ...formData, student_id: e.target.value })}
+                    placeholder="e.g. 2025-001"
+                  />
+                </div>
+              )}
+
+              <div className={editingId ? "col-span-1 md:col-span-2" : ""}>
                 <Label>Assigned Room <span className="text-red-500">*</span></Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001F3F]"
                   value={formData.room_id}
-                  onChange={e => setFormData({ ...formData, room_id: Number(e.target.value) })}
+                  onChange={e => setFormData({ ...formData, room_id: e.target.value })}
                 >
-                  <option value={0}>Select a room</option>
+                  <option value="">Select a room</option>
                   {rooms.map((room) => (
-                    <option key={room.id} value={room.id}>
-                      Room {room.code} ({room.students_count}/{room.capacity} occupants)
+                    <option key={room._id} value={room._id}>
+                      Room {room.roomNumber} ({room.students_count}/{room.capacity} occupants)
                     </option>
                   ))}
                 </select>
@@ -488,23 +603,23 @@ export function StudentsManagement() {
                 </div>
               )}
 
-              {/* Contact Section */}
-              <div className="col-span-1 md:col-span-2 mt-2">
-                <h4 className="text-sm uppercase tracking-wider text-gray-500 font-bold mb-3 border-b pb-1">Emergency Contact</h4>
-              </div>
+              {/* Contact Section - Only show when creating new student */}
+              {!editingId && (
+                <>
+                  <div className="col-span-1 md:col-span-2 mt-2">
+                    <h4 className="text-sm uppercase tracking-wider text-gray-500 font-bold mb-3 border-b pb-1">Emergency Contact</h4>
+                  </div>
 
-              <div>
-                <Label>Contact Name</Label>
-                <Input value={formData.emergency_contact_name} onChange={e => setFormData({ ...formData, emergency_contact_name: e.target.value })} placeholder="Parent/Guardian Name"
-                  disabled={!!editingId} className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
-              <div>
-                <Label>Contact Phone</Label>
-                <Input value={formData.emergency_contact_phone} onChange={e => setFormData({ ...formData, emergency_contact_phone: e.target.value })} placeholder="0912 345 6789"
-                  disabled={!!editingId} className={editingId ? 'bg-gray-100' : ''}
-                />
-              </div>
+                  <div>
+                    <Label>Contact Name</Label>
+                    <Input value={formData.emergency_contact_name} onChange={e => setFormData({ ...formData, emergency_contact_name: e.target.value })} placeholder="Parent/Guardian Name" />
+                  </div>
+                  <div>
+                    <Label>Contact Phone</Label>
+                    <Input value={formData.emergency_contact_phone} onChange={e => setFormData({ ...formData, emergency_contact_phone: e.target.value })} placeholder="0912 345 6789" />
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="py-4 min-h-[300px]">
