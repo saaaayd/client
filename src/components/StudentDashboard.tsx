@@ -38,7 +38,7 @@ export function StudentDashboard() {
     const load = async () => {
       try {
         const [paymentsRes, requestsRes, announcementsRes] = await Promise.all([
-          axios.get('/api/payments', { params: { student_id: user.id } }),
+          axios.get('/api/payments/my-history'),
           axios.get('/api/maintenance-requests', { params: { student_id: user.id } }),
           axios.get('/api/announcements'),
         ]);

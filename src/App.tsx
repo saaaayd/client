@@ -315,9 +315,7 @@ function StudentPayments() {
       if (!user?.id) return;
       setLoading(true);
       try {
-        const res = await axios.get('/api/payments', {
-          params: { student_id: user.id },
-        });
+        const res = await axios.get('/api/payments/my-history');
         setPayments(res.data);
       } catch (error) {
         setPayments([]);
@@ -334,30 +332,27 @@ function StudentPayments() {
   };
 
   const handleSubmitReceipt = async (payment: any) => {
-    const file = files[payment.id] || null;
+    const file = files[payment._id] || null;
     if (!file) {
       Swal.fire('Missing receipt', 'Please attach a photo of your receipt first.', 'warning');
       return;
     }
 
-    setSubmittingId(payment.id);
+    setSubmittingId(payment._id);
 
     const formData = new FormData();
     formData.append('status', 'paid');
     formData.append('receipt_image', file);
-    formData.append('_method', 'PUT');
 
     try {
-      await axios.post(`/api/payments/${payment.id}`, formData, {
+      await axios.put(`/api/payments/${payment._id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       Swal.fire('Submitted', 'Your receipt was uploaded. Please wait for admin approval.', 'success');
-      setFiles((prev) => ({ ...prev, [payment.id]: null }));
+      setFiles((prev) => ({ ...prev, [payment._id]: null }));
 
       // Refresh payments
-      const res = await axios.get('/api/payments', {
-        params: { student_id: user?.id },
-      });
+      const res = await axios.get('/api/payments/my-history');
       setPayments(res.data);
 
     } catch (error: any) {
@@ -416,7 +411,7 @@ function StudentPayments() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
+                  <tr key={payment._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <span className="capitalize bg-gray-100 px-3 py-1 rounded text-sm">
                         {payment.type}
@@ -452,16 +447,16 @@ function StudentPayments() {
                             type="file"
                             accept="image/*,application/pdf"
                             onChange={(e) =>
-                              handleFileChange(payment.id, e.target.files?.[0] || null)
+                              handleFileChange(payment._id, e.target.files?.[0] || null)
                             }
                             className="text-xs w-full"
                           />
                           <button
                             onClick={() => handleSubmitReceipt(payment)}
-                            disabled={submittingId === payment.id}
+                            disabled={submittingId === payment._id}
                             className="bg-[#001F3F] text-white px-3 py-1 rounded text-xs hover:bg-[#003366] disabled:opacity-50"
                           >
-                            {submittingId === payment.id ? 'Submitting...' : 'Submit Receipt'}
+                            {submittingId === payment._id ? 'Submitting...' : 'Submit Receipt'}
                           </button>
                         </div>
                       ) : payment.receipt_url ? (

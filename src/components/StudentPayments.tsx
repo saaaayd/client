@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 
 interface Payment {
-  id: number;
+  _id: string;
   amount: number;
   type: string;
   status: 'paid' | 'pending' | 'overdue' | 'verified';
@@ -21,9 +21,9 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
 export function StudentPayments() {
   const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [files, setFiles] = useState<Record<number, File | null>>({});
-  const [receiptLinks, setReceiptLinks] = useState<Record<number, string>>({});
-  const [submittingId, setSubmittingId] = useState<number | null>(null);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [receiptLinks, setReceiptLinks] = useState<Record<string, string>>({});
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -33,33 +33,31 @@ export function StudentPayments() {
   const fetchPayments = async () => {
     if (!user) return;
     try {
-      const res = await axios.get('/api/payments', {
-        params: { student_id: user.id },
-      });
+      const res = await axios.get('/api/payments/my-history');
       setPayments(res.data);
     } catch (error) {
       console.error('Error loading payments', error);
     }
   };
 
-  const handleFileChange = (paymentId: number, file: File | null) => {
+  const handleFileChange = (paymentId: string, file: File | null) => {
     setFiles((prev) => ({ ...prev, [paymentId]: file }));
   };
 
-  const handleUrlChange = (paymentId: number, url: string) => {
+  const handleUrlChange = (paymentId: string, url: string) => {
     setReceiptLinks((prev) => ({ ...prev, [paymentId]: url }));
   };
 
   const handleSubmitReceipt = async (payment: Payment) => {
-    const file = files[payment.id] || null;
-    const urlLink = receiptLinks[payment.id] || '';
+    const file = files[payment._id] || null;
+    const urlLink = receiptLinks[payment._id] || '';
 
     if (!file && !urlLink) {
       Swal.fire('Missing Receipt', 'Please select an image file or paste a link.', 'warning');
       return;
     }
 
-    setSubmittingId(payment.id);
+    setSubmittingId(payment._id);
 
     try {
       if (file) {
@@ -67,19 +65,19 @@ export function StudentPayments() {
         formData.append('status', 'paid');
         formData.append('receipt_image', file);
 
-        await axios.put(`/api/payments/${payment.id}`, formData, {
+        await axios.put(`/api/payments/${payment._id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
-        await axios.put(`/api/payments/${payment.id}`, {
+        await axios.put(`/api/payments/${payment._id}`, {
           status: 'paid',
           receiptUrl: urlLink,
         });
       }
 
       Swal.fire('Submitted', 'Your receipt was uploaded. Please wait for admin approval.', 'success');
-      setFiles((prev) => ({ ...prev, [payment.id]: null }));
-      setReceiptLinks((prev) => ({ ...prev, [payment.id]: '' }));
+      setFiles((prev) => ({ ...prev, [payment._id]: null }));
+      setReceiptLinks((prev) => ({ ...prev, [payment._id]: '' }));
       fetchPayments();
     } catch (error: any) {
       console.error(error);
@@ -106,7 +104,7 @@ export function StudentPayments() {
         <div className="space-y-4">
           {payments.map((p) => (
             <div
-              key={p.id}
+              key={p._id}
               className="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
             >
               <div>
@@ -157,9 +155,9 @@ export function StudentPayments() {
                     <input
                       type="url"
                       placeholder="Paste GDrive/Receipt Link here..."
-                      value={receiptLinks[p.id] || ''}
+                      value={receiptLinks[p._id] || ''}
                       onChange={(e) =>
-                        handleUrlChange(p.id, e.target.value)
+                        handleUrlChange(p._id, e.target.value)
                       }
                       className="text-xs border rounded p-2 flex-grow min-w-0"
                     />
@@ -167,9 +165,9 @@ export function StudentPayments() {
                       size="sm"
                       className="bg-[#001F3F] text-white hover:bg-[#003366] whitespace-nowrap"
                       onClick={() => handleSubmitReceipt(p)}
-                      disabled={submittingId === p.id}
+                      disabled={submittingId === p._id}
                     >
-                      {submittingId === p.id ? '...' : 'Submit'}
+                      {submittingId === p._id ? '...' : 'Submit'}
                     </Button>
                   </div>
                 </div>
