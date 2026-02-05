@@ -241,19 +241,26 @@ export function StudentsManagement() {
 
   const handleApprove = async (student: Student) => {
     const result = await Swal.fire({
-      title: 'Approve Student?',
-      text: `This will activate ${student.name}'s account.`,
-      icon: 'question',
+      title: 'Approve Student',
+      text: `Enter Student ID for ${student.name}`,
+      input: 'text',
+      inputPlaceholder: 'e.g. 2024-001',
       showCancelButton: true,
       confirmButtonColor: '#001F3F',
-      confirmButtonText: 'Yes, Approve'
+      confirmButtonText: 'Approve',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to write a Student ID!';
+        }
+      }
     });
 
-    if (result.isConfirmed) {
+    if (result.isConfirmed && result.value) {
       setLoading(true);
       try {
         await axios.put(`/api/students/${student._id}`, {
-          status: 'active'
+          status: 'active',
+          student_id: result.value
         });
         Swal.fire({
           icon: 'success',

@@ -9,8 +9,8 @@ interface Payment {
   amount: number;
   type: string;
   status: 'paid' | 'pending' | 'overdue' | 'verified';
-  due_date: string;
-  receipt_url?: string;
+  dueDate: string; // Changed from due_date
+  receiptUrl?: string; // Changed/Standardized
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
@@ -22,6 +22,7 @@ export function StudentPayments() {
   const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [files, setFiles] = useState<Record<number, File | null>>({});
+  const [receiptLinks, setReceiptLinks] = useState<Record<number, string>>({});
   const [submittingId, setSubmittingId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -45,26 +46,40 @@ export function StudentPayments() {
     setFiles((prev) => ({ ...prev, [paymentId]: file }));
   };
 
+  const handleUrlChange = (paymentId: number, url: string) => {
+    setReceiptLinks((prev) => ({ ...prev, [paymentId]: url }));
+  };
+
   const handleSubmitReceipt = async (payment: Payment) => {
     const file = files[payment.id] || null;
-    if (!file) {
-      Swal.fire('Missing receipt', 'Please attach a photo of your receipt first.', 'warning');
+    const urlLink = receiptLinks[payment.id] || '';
+
+    if (!file && !urlLink) {
+      Swal.fire('Missing Receipt', 'Please select an image file or paste a link.', 'warning');
       return;
     }
 
     setSubmittingId(payment.id);
 
-    const formData = new FormData();
-    formData.append('status', 'paid');
-    formData.append('receipt_image', file);
-    formData.append('_method', 'PUT');
-
     try {
-      await axios.post(`/api/payments/${payment.id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      if (file) {
+        const formData = new FormData();
+        formData.append('status', 'paid');
+        formData.append('receipt_image', file);
+
+        await axios.put(`/api/payments/${payment.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        await axios.put(`/api/payments/${payment.id}`, {
+          status: 'paid',
+          receiptUrl: urlLink,
+        });
+      }
+
       Swal.fire('Submitted', 'Your receipt was uploaded. Please wait for admin approval.', 'success');
       setFiles((prev) => ({ ...prev, [payment.id]: null }));
+      setReceiptLinks((prev) => ({ ...prev, [payment.id]: '' }));
       fetchPayments();
     } catch (error: any) {
       console.error(error);
@@ -100,57 +115,63 @@ export function StudentPayments() {
                 </p>
                 <p className="text-xs text-gray-500">
                   Due:{' '}
-                  {p.due_date ? new Date(p.due_date).toLocaleDateString() : 'Not set'}
+                  {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : 'Not set'}
                 </p>
                 <p className="text-xs mt-1">
                   Status:{' '}
                   <span
-                    className={`px-2 py-0.5 rounded-full text-xs ${
-                      p.status === 'verified'
-                        ? 'bg-green-100 text-green-700'
-                        : p.status === 'paid'
+                    className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'verified'
+                      ? 'bg-green-100 text-green-700'
+                      : p.status === 'paid'
                         ? 'bg-blue-100 text-blue-700'
                         : p.status === 'overdue'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
                   >
                     {p.status}
                   </span>
                 </p>
-                {p.receipt_url && (
-                  <p className="text-xs mt-1">
-                    Proof:{' '}
-                    <a
-                      href={p.receipt_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 underline"
-                    >
-                      View receipt
+                {p.receiptUrl && (
+                  <div className="mt-2 text-xs">
+                    <p className="text-gray-500 mb-1">Proof:</p>
+                    <a href={p.receiptUrl} target="_blank" rel="noreferrer" className="block w-16 h-16 border rounded overflow-hidden">
+                      <img
+                        src={p.receiptUrl}
+                        alt="Receipt"
+                        className="w-full h-full object-cover hover:scale-110 transition-transform"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement!.innerText = 'View';
+                          (e.target as HTMLImageElement).parentElement!.className = 'text-blue-600 underline';
+                        }}
+                      />
                     </a>
-                  </p>
+                  </div>
                 )}
               </div>
 
-              {(p.status === 'pending' || p.status === 'overdue') && !p.receipt_url && (
-                <div className="flex flex-col items-stretch gap-2 w-full md:w-64">
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={(e) =>
-                      handleFileChange(p.id, e.target.files?.[0] || null)
-                    }
-                    className="text-xs"
-                  />
-                  <Button
-                    size="sm"
-                    className="bg-[#001F3F] text-white hover:bg-[#003366]"
-                    onClick={() => handleSubmitReceipt(p)}
-                    disabled={submittingId === p.id}
-                  >
-                    {submittingId === p.id ? 'Submitting...' : 'Submit Receipt'}
-                  </Button>
+              {(p.status === 'pending' || p.status === 'overdue') && !p.receiptUrl && (
+                <div className="flex flex-col items-stretch gap-2 w-full md:w-80">
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Paste GDrive/Receipt Link here..."
+                      value={receiptLinks[p.id] || ''}
+                      onChange={(e) =>
+                        handleUrlChange(p.id, e.target.value)
+                      }
+                      className="text-xs border rounded p-2 flex-grow min-w-0"
+                    />
+                    <Button
+                      size="sm"
+                      className="bg-[#001F3F] text-white hover:bg-[#003366] whitespace-nowrap"
+                      onClick={() => handleSubmitReceipt(p)}
+                      disabled={submittingId === p.id}
+                    >
+                      {submittingId === p.id ? '...' : 'Submit'}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

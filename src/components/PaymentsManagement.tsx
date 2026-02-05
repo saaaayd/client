@@ -20,6 +20,7 @@ const emptyPayment = {
   due_date: '',
   status: 'pending',
   notes: '',
+  receiptUrl: '',
 };
 
 export function PaymentsManagement() {
@@ -30,11 +31,22 @@ export function PaymentsManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ ...emptyPayment });
   const [bulkRows, setBulkRows] = useState([{ ...emptyPayment }]);
+  const [file, setFile] = useState<File | null>(null);
+
+  // Receipt Modal State
+  const [viewingPayment, setViewingPayment] = useState<any>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPayments();
     fetchStudents();
   }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
 
   const fetchPayments = async () => {
     const res = await axios.get('/api/payments');
@@ -49,13 +61,19 @@ export function PaymentsManagement() {
   const openModal = (payment: any = null) => {
     if (payment) {
       setEditingId(payment.id);
+      // Ensure we get the ID string whether it's populated or not
+      const studentId = payment.student && typeof payment.student === 'object'
+        ? payment.student._id
+        : payment.student;
+
       setFormData({
-        student_id: String(payment.student_id),
+        student_id: studentId || '',
         amount: String(payment.amount),
         type: payment.type,
-        due_date: payment.due_date,
+        due_date: payment.dueDate ? new Date(payment.dueDate).toISOString().split('T')[0] : '', // Handle different date formats if needed
         status: payment.status,
         notes: payment.notes || '',
+        receiptUrl: payment.receiptUrl || '',
       });
     } else {
       setEditingId(null);
@@ -79,9 +97,13 @@ export function PaymentsManagement() {
     }
 
     const payload = {
-      ...formData,
-      student_id: Number(formData.student_id),
+      student: formData.student_id, // Match backend expectation "student"
       amount: Number(formData.amount),
+      type: formData.type,
+      dueDate: formData.due_date, // Match backend expectation "dueDate"
+      status: formData.status,
+      notes: formData.notes,
+      receiptUrl: formData.receiptUrl
     };
 
     try {
@@ -252,20 +274,28 @@ export function PaymentsManagement() {
                 <td className="px-6 py-4">{currencyFormatter.format(Number(p.amount || 0))}</td>
                 <td className="px-6 py-4 capitalize">{p.type}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {p.due_date ? new Date(p.due_date).toLocaleDateString() : '--'}
+                  {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : '--'}
                 </td>
                 <td className="px-6 py-4 text-sm">
-                  {p.receipt_url ? (
-                    <a
-                      href={p.receipt_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 underline"
-                    >
-                      View
-                    </a>
+                  {p.receiptUrl ? (
+                    <div className="w-16 h-16 border rounded overflow-hidden relative group">
+                      <img
+                        src={p.receiptUrl}
+                        alt="Receipt"
+                        className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                        onClick={() => window.open(p.receiptUrl, '_blank')}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement!.innerText = 'View Link';
+                          (e.target as HTMLImageElement).parentElement!.className = 'text-blue-600 underline text-xs flex items-center justify-center h-full cursor-pointer';
+                          (e.target as HTMLImageElement).parentElement!.onclick = () => window.open(p.receiptUrl, '_blank');
+                        }}
+                      />
+                    </div>
+                  ) : p.status === 'paid' ? (
+                    <span className="text-xs text-red-500 italic">There is no receipt yet</span>
                   ) : (
-                    <span className="text-gray-400 text-xs">No proof</span>
+                    <span className="text-gray-400 text-xs">--</span>
                   )}
                 </td>
                 <td className="px-6 py-4">
@@ -283,11 +313,26 @@ export function PaymentsManagement() {
                   </span>
                 </td>
                 <td className="px-6 py-4 flex gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => openModal(p)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setViewingPayment(p);
+                      setIsReceiptModalOpen(true);
+                    }}
+                    title="View Receipt / Update Status"
+                  >
                     <Edit className="w-4 h-4 text-blue-600" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(p.id)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleDelete(p._id || p.id)}
+                    title="Delete Record"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </td>
               </tr>
@@ -315,7 +360,7 @@ export function PaymentsManagement() {
               >
                 <option value="">Select Student</option>
                 {students.map((s: any) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s._id} value={s._id}>
                     {s.name}
                   </option>
                 ))}
@@ -366,6 +411,23 @@ export function PaymentsManagement() {
               </select>
             </div>
             <div>
+              <Label>Receipt / Proof</Label>
+              {formData.receiptUrl && !file && (
+                <div className="mb-2">
+                  <p className="text-xs text-gray-500 mb-1">Current Proof:</p>
+                  <a href={formData.receiptUrl} target="_blank" rel="noreferrer" className="block w-20 h-20 border rounded overflow-hidden">
+                    <img src={formData.receiptUrl} alt="Receipt" className="w-full h-full object-cover" />
+                  </a>
+                </div>
+              )}
+              <Input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleFileChange}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Upload an image or PDF. This will replace any existing proof.</p>
+            </div>
+            <div>
               <Label>Notes</Label>
               <Textarea
                 value={formData.notes}
@@ -375,7 +437,7 @@ export function PaymentsManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleSubmit} className="bg-[#001F3F]">
+            <Button onClick={handleSubmit} className="bg-[#001F3F] text-white hover:bg-[#003366]">
               Save Record
             </Button>
           </DialogFooter>
@@ -489,6 +551,67 @@ export function PaymentsManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+
+
+      {/* Student Receipt Modal */}
+      <Dialog open={isReceiptModalOpen} onOpenChange={setIsReceiptModalOpen}>
+        <DialogContent className="bg-white z-[100] border-2 border-gray-200 shadow-xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center pb-2 border-b">Student receipt</DialogTitle>
+            <DialogDescription className="sr-only">View and verify student payment receipt</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-center p-4 min-h-[300px]">
+            {viewingPayment?.receiptUrl ? (
+              <div className="w-full relative border rounded-lg overflow-hidden">
+                <img
+                  src={viewingPayment.receiptUrl}
+                  alt="Receipt"
+                  className="w-full h-auto object-contain max-h-[60vh]"
+                />
+                <a
+                  href={viewingPayment.receiptUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded"
+                >
+                  Open Original
+                </a>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500">
+                No uploaded receipt yet
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex justify-center gap-2 sm:justify-center">
+            <Button
+              className="bg-[#001F3F] hover:bg-[#003366] text-white min-w-[100px]"
+              onClick={async () => {
+                if (!viewingPayment) return;
+                try {
+                  await axios.patch(`/api/payments/${viewingPayment._id || viewingPayment.id}`, { status: 'paid' });
+                  setIsReceiptModalOpen(false);
+                  fetchPayments();
+                  Swal.fire('Updated', 'Payment marked as Paid.', 'success');
+                } catch (e) {
+                  console.error(e);
+                  Swal.fire('Error', 'Failed to update status.', 'error');
+                }
+              }}
+            >
+              Paid
+            </Button>
+            <Button
+              className="bg-[#001F3F] hover:bg-[#003366] text-white min-w-[100px]"
+              onClick={() => setIsReceiptModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div >
   );
 }
