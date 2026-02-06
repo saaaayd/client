@@ -23,9 +23,14 @@ interface DashboardMaintenance {
   description: string;
   urgency: 'low' | 'medium' | 'high';
   status: string;
-  room_number?: string;
+  roomNumber?: string;
   created_at: string;
-  student?: { name: string };
+  student?: {
+    name: string;
+    studentProfile?: {
+      roomNumber: string;
+    }
+  };
 }
 
 export function AdminDashboard() {
@@ -37,7 +42,7 @@ export function AdminDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await axios.get('/api/dashboard/stats');
+        const res = await axios.get('/api/dashboard/admin/stats');
         setStats(res.data.stats);
         setRecentAnnouncements(res.data.recentAnnouncements || []);
         setUrgentMaintenance(res.data.urgentMaintenance || []);
@@ -111,10 +116,10 @@ export function AdminDashboard() {
                 <div className="flex items-start justify-between">
                   <h4 className="text-[#001F3F]">{announcement.title}</h4>
                   <span className={`text-xs px-2 py-1 rounded ${announcement.priority === 'urgent'
-                      ? 'bg-red-100 text-red-700'
-                      : announcement.priority === 'important'
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-gray-100 text-gray-700'
+                    ? 'bg-red-100 text-red-700'
+                    : announcement.priority === 'important'
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-gray-100 text-gray-700'
                     }`}>
                     {announcement.priority}
                   </span>
@@ -139,7 +144,7 @@ export function AdminDashboard() {
                     <div>
                       <h4 className="text-[#001F3F]">{request.title}</h4>
                       <p className="text-sm text-gray-600">
-                        Room {request.room_number ?? 'N/A'} - {request.student?.name ?? 'Unknown'}
+                        Room {request.roomNumber || request.student?.studentProfile?.roomNumber || 'N/A'} - {request.student?.name ?? 'Unknown'}
                       </p>
                     </div>
                     <span className="bg-red-500 text-white text-xs px-2 py-1 rounded">HIGH</span>
@@ -147,8 +152,8 @@ export function AdminDashboard() {
                   <p className="text-sm text-gray-700 line-clamp-2">{request.description}</p>
                   <div className="mt-3 flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded ${request.status === 'in-progress'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-yellow-100 text-yellow-700'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-yellow-100 text-yellow-700'
                       }`}>
                       {request.status.replace('-', ' ')}
                     </span>

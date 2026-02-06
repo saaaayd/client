@@ -19,17 +19,17 @@ const STORAGE_KEY = 'dormsync_session';
 function mapApiUser(apiUser: any): User {
   let studentProfile: StudentProfile | undefined;
 
-  if (apiUser?.student_profile) {
-    const sp = apiUser.student_profile;
+  if (apiUser?.student_profile || apiUser?.studentProfile) {
+    const sp = apiUser.student_profile || apiUser.studentProfile;
     studentProfile = {
       id: sp.id,
-      userId: sp.user_id,
-      roomId: sp.room_id,
-      roomNumber: sp.room_number ?? sp.room?.code ?? '',
-      phoneNumber: sp.phone_number,
-      emergencyContactName: sp.emergency_contact_name,
-      emergencyContactPhone: sp.emergency_contact_phone,
-      enrollmentDate: sp.enrollment_date,
+      userId: sp.user_id || sp.userId,
+      roomId: sp.room_id || sp.roomId,
+      roomNumber: sp.room_number || sp.roomNumber || sp.room?.code || '',
+      phoneNumber: sp.phone_number || sp.phoneNumber,
+      emergencyContactName: sp.emergency_contact_name || sp.emergencyContactName,
+      emergencyContactPhone: sp.emergency_contact_phone || sp.emergencyContactPhone,
+      enrollmentDate: sp.enrollment_date || sp.enrollmentDate,
       status: sp.status,
     };
   }

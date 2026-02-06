@@ -93,4 +93,5 @@ export interface Room {
   price: number;
   status: 'Available' | 'Occupied' | 'Maintenance';
   features: string[];
+  students_count?: number;
 }

@@ -7,6 +7,17 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
+import { usePagination } from '../hooks/usePagination';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./ui/pagination";
+
+import { useAuth } from '../context/AuthContext';
 
 const initialForm = {
   student_id: '',
@@ -18,6 +29,7 @@ const initialForm = {
 };
 
 export function MaintenanceManagement() {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,13 +37,18 @@ export function MaintenanceManagement() {
   const [formData, setFormData] = useState<typeof initialForm>(initialForm);
 
   useEffect(() => {
-    fetchRequests();
-    fetchStudents();
-  }, []);
+    if (user) {
+      fetchRequests();
+      if (user.role === 'admin') {
+        fetchStudents();
+      }
+    }
+  }, [user]);
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get('/api/maintenance');
+      const endpoint = user?.role === 'student' ? '/api/maintenance/my-requests' : '/api/maintenance';
+      const res = await axios.get(endpoint);
       setRequests(res.data);
     } catch (error) {
       console.error('Error fetching maintenance requests', error);
@@ -50,18 +67,27 @@ export function MaintenanceManagement() {
 
   const openModal = (req: any = null) => {
     if (req) {
-      setEditingId(req.id);
+      setEditingId(req.id || req._id);
       setFormData({
-        student_id: String(req.student_id || ''),
+        student_id: String(req.student_id || req.student?._id || req.student || ''),
         title: req.title || '',
         description: req.description || '',
         urgency: req.urgency || 'low',
         status: req.status || 'pending',
-        room_number: req.room_number || '',
+        room_number: req.roomNumber || req.room_number || '', // Backend uses roomNumber
       });
     } else {
       setEditingId(null);
-      setFormData(initialForm);
+      // If student, pre-fill their ID and room
+      if (user?.role === 'student') {
+        setFormData({
+          ...initialForm,
+          student_id: user.id,
+          room_number: user.studentProfile?.roomNumber || ''
+        });
+      } else {
+        setFormData(initialForm);
+      }
     }
     setIsModalOpen(true);
   };
@@ -76,8 +102,8 @@ export function MaintenanceManagement() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.student_id || !formData.title || !formData.description) {
-      Swal.fire('Missing fields', 'Please select a student and fill in title and description.', 'warning');
+    if ((user?.role === 'admin' && !formData.student_id) || !formData.title || !formData.description) {
+      Swal.fire('Missing fields', 'Title and description are required.', 'warning');
       return;
     }
 
@@ -103,7 +129,18 @@ export function MaintenanceManagement() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleStatusUpdate = async (id: string, status: string) => {
+    try {
+      await axios.patch(`/api/maintenance/${id}/status`, { status });
+      Swal.fire('Updated', `Request marked as ${status}.`, 'success');
+      fetchRequests();
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'Failed to update status.', 'error');
+    }
+  };
+
+  const handleDelete = async (id: number | string) => {
     const res = await Swal.fire({
       title: 'Delete request?',
       text: 'This action cannot be undone.',
@@ -123,24 +160,30 @@ export function MaintenanceManagement() {
         Swal.fire('Error', 'Failed to delete request.', 'error');
       }
     }
-  };
+  }
+
+
+  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(requests, 9);
+  const currentRequests = currentData();
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-[#001F3F] text-2xl font-bold">Maintenance</h2>
-        <Button
-          onClick={() => openModal()}
-          className="bg-[#FFD700] text-[#001F3F] hover:bg-[#e6c200]"
-        >
-          <Plus className="mr-2 h-4 w-4" /> New Request
-        </Button>
+        {user?.role === 'student' && (
+          <Button
+            onClick={() => openModal()}
+            className="bg-[#001F3F] text-white hover:bg-[#003366]"
+          >
+            <Plus className="mr-2 h-4 w-4" /> New Request
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {requests.map((req: any) => (
+        {currentRequests.map((req: any) => (
           <div
-            key={req.id}
+            key={req._id || req.id}
             className={`bg-white p-4 rounded shadow border-l-4 ${req.urgency === 'high'
               ? 'border-red-500'
               : req.urgency === 'medium'
@@ -155,11 +198,37 @@ export function MaintenanceManagement() {
                   {req.student?.name ? `For: ${req.student.name}` : 'Unassigned'}
                 </p>
               </div>
+
               <div className="flex gap-1">
-                <Button size="sm" variant="ghost" onClick={() => openModal(req)}>
-                  <Edit className="w-4 h-4 text-blue-500" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleDelete(req.id)}>
+                {user?.role === 'admin' ? (
+                  <>
+                    {req.status === 'pending' && (
+                      <Button
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white text-xs"
+                        onClick={() => handleStatusUpdate(req._id || req.id, 'in-progress')}
+                      >
+                        Start
+                      </Button>
+                    )}
+                    {req.status !== 'resolved' && (
+                      <Button
+                        size="sm"
+                        className="bg-green-500 hover:bg-green-600 text-white text-xs"
+                        onClick={() => handleStatusUpdate(req._id || req.id, 'resolved')}
+                      >
+                        Done
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  req.status === 'pending' && ( /* Students can only edit pending requests, theoretically, but for now just show edit if student? actually students probably shouldn't edit after submission either, but let's stick to admin request */
+                    <Button size="sm" variant="ghost" onClick={() => openModal(req)}>
+                      <Edit className="w-4 h-4 text-blue-500" />
+                    </Button>
+                  )
+                )}
+                <Button size="sm" variant="ghost" onClick={() => handleDelete(req._id || req.id)}>
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </Button>
               </div>
@@ -177,12 +246,44 @@ export function MaintenanceManagement() {
                 {req.status}
               </span>
               <span className="text-xs text-gray-400">
-                Room: {req.room_number || 'N/A'}
+                Room: {req.roomNumber || req.room_number || 'N/A'}
               </span>
             </div>
           </div>
         ))}
       </div>
+
+      {maxPage > 1 && (
+        <div className="p-4 border-t border-gray-100">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={(e) => { e.preventDefault(); prev(); }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {Array.from({ length: maxPage }).map((_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    isActive={currentPage === i + 1}
+                    onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={(e) => { e.preventDefault(); next(); }}
+                  className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-white z-[100] border-2 border-gray-200 shadow-xl">
@@ -190,31 +291,35 @@ export function MaintenanceManagement() {
             <DialogTitle>{editingId ? 'Edit Request' : 'New Request'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <Label>Student</Label>
-              <select
-                className="w-full border rounded p-2"
-                value={formData.student_id}
-                onChange={(e) => handleStudentChange(e.target.value)}
-              >
-                <option value="">Select student</option>
-                {students.map((s: any) => (
-                  <option key={s._id || s.id} value={s._id || s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Room Number</Label>
-              <Input
-                value={formData.room_number}
-                onChange={(e) =>
-                  setFormData({ ...formData, room_number: e.target.value })
-                }
-                placeholder="Auto-filled from student profile (optional override)"
-              />
-            </div>
+            {user?.role === 'admin' && (
+              <>
+                <div>
+                  <Label>Student</Label>
+                  <select
+                    className="w-full border rounded p-2"
+                    value={formData.student_id}
+                    onChange={(e) => handleStudentChange(e.target.value)}
+                  >
+                    <option value="">Select student</option>
+                    {students.map((s: any) => (
+                      <option key={s._id || s.id} value={s._id || s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Room Number</Label>
+                  <Input
+                    value={formData.room_number}
+                    onChange={(e) =>
+                      setFormData({ ...formData, room_number: e.target.value })
+                    }
+                    placeholder="Auto-filled from student profile (optional override)"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <Label>Title</Label>
               <Input
@@ -247,28 +352,30 @@ export function MaintenanceManagement() {
                 <option value="high">High</option>
               </select>
             </div>
-            <div>
-              <Label>Status</Label>
-              <select
-                className="w-full border rounded p-2"
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
-              >
-                <option value="pending">Pending</option>
-                <option value="in-progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-              </select>
-            </div>
+            {user?.role === 'admin' && ( // Only admin can change status from here
+              <div>
+                <Label>Status</Label>
+                <select
+                  className="w-full border rounded p-2"
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button onClick={handleSubmit} className="bg-[#001F3F]">
+            <Button onClick={handleSubmit} className="bg-[#001F3F] text-white hover:bg-[#003366]">
               Save
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

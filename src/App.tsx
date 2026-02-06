@@ -89,6 +89,8 @@ function AppContent() {
           return <MaintenanceManagement />; // Assuming MaintenanceManagement can be used by students too, or needs a StudentMaintenance component
         case 'cleaning':
           return <CleaningSchedule />; // Assuming CleaningSchedule can be used by students too, or needs a StudentCleaningSchedule component
+        case 'attendance':
+          return <AttendanceManagement />;
         case 'announcements':
           return <AnnouncementsManagement />; // Assuming AnnouncementsManagement can be used by students too
         default:

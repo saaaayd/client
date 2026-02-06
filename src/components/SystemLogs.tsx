@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ShieldCheck, Search, Filter, Calendar } from 'lucide-react';
 import { Input } from './ui/input';
+import { usePagination } from '../hooks/usePagination';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "./ui/pagination";
 
 interface SystemLog {
     _id: string;
@@ -46,7 +55,11 @@ export function SystemLogs() {
     const handleFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         fetchLogs();
+        fetchLogs();
     }
+
+    const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(logs, 15);
+    const currentLogs = currentData();
 
     return (
         <div className="space-y-6">
@@ -113,8 +126,8 @@ export function SystemLogs() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {logs.length > 0 ? (
-                                logs.map((log) => (
+                            {currentLogs.length > 0 ? (
+                                currentLogs.map((log) => (
                                     <tr key={log._id} className="hover:bg-gray-50">
                                         <td className="px-6 py-3 whitespace-nowrap text-gray-500">
                                             {new Date(log.timestamp).toLocaleString()}
@@ -125,9 +138,9 @@ export function SystemLogs() {
                                         </td>
                                         <td className="px-6 py-3">
                                             <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${log.action.includes('DELETE') ? 'bg-red-100 text-red-700' :
-                                                    log.action.includes('UPDATE') ? 'bg-blue-100 text-blue-700' :
-                                                        log.action.includes('create') || log.action.includes('REGISTER') ? 'bg-green-100 text-green-700' :
-                                                            'bg-gray-100 text-gray-700'
+                                                log.action.includes('UPDATE') ? 'bg-blue-100 text-blue-700' :
+                                                    log.action.includes('create') || log.action.includes('REGISTER') ? 'bg-green-100 text-green-700' :
+                                                        'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {log.action}
                                             </span>
@@ -150,7 +163,39 @@ export function SystemLogs() {
                         </tbody>
                     </table>
                 </div>
+
+                {maxPage > 1 && (
+                    <div className="p-4 border-t border-gray-100">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={(e) => { e.preventDefault(); prev(); }}
+                                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                                {Array.from({ length: maxPage }).map((_, i) => (
+                                    <PaginationItem key={i}>
+                                        <PaginationLink
+                                            isActive={currentPage === i + 1}
+                                            onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                                            className="cursor-pointer"
+                                        >
+                                            {i + 1}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={(e) => { e.preventDefault(); next(); }}
+                                        className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
             </div>
-        </div>
+        </div >
     );
 }

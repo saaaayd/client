@@ -45,6 +45,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'payments', label: 'My Payments', icon: PhilippinePeso },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'cleaning', label: 'Cleaning', icon: Calendar },
+    { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
   ];
 

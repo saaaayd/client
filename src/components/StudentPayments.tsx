@@ -3,12 +3,21 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
+import { usePagination } from '../hooks/usePagination';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./ui/pagination";
 
 interface Payment {
   _id: string;
   amount: number;
   type: string;
-  status: 'paid' | 'pending' | 'overdue' | 'verified';
+  status: 'paid' | 'pending' | 'overdue' | 'verified' | 'submitted';
   dueDate: string; // Changed from due_date
   receiptUrl?: string; // Changed/Standardized
 }
@@ -24,6 +33,9 @@ export function StudentPayments() {
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [receiptLinks, setReceiptLinks] = useState<Record<string, string>>({});
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+
+  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(payments, 5);
+  const currentPayments = currentData();
 
   useEffect(() => {
     if (!user) return;
@@ -49,35 +61,31 @@ export function StudentPayments() {
   };
 
   const handleSubmitReceipt = async (payment: Payment) => {
-    const file = files[payment._id] || null;
-    const urlLink = receiptLinks[payment._id] || '';
+    const file = files[payment._id];
 
-    if (!file && !urlLink) {
-      Swal.fire('Missing Receipt', 'Please select an image file or paste a link.', 'warning');
+    if (!file) {
+      Swal.fire('Missing Receipt', 'Please select an image file to upload.', 'warning');
       return;
     }
 
     setSubmittingId(payment._id);
 
     try {
-      if (file) {
-        const formData = new FormData();
-        formData.append('status', 'paid');
-        formData.append('receipt_image', file);
+      const formData = new FormData();
+      // Since we are uploading a receipt, we can assume the status implies 'paid' or 'verification pending'.
+      // However, the backend logic for updates relies on 'status' being passed if we want to change it.
+      // Let's set it to 'paid' as per original logic, or maybe just upload the file.
+      // The instructions say "admin can see the receipt", usually this implies a state change to 'paid' or 'pending approval'.
+      // Let's set it to 'submitted' so admin can verify it.
+      formData.append('status', 'submitted');
+      formData.append('receipt_image', file);
 
-        await axios.put(`/api/payments/${payment._id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } else {
-        await axios.put(`/api/payments/${payment._id}`, {
-          status: 'paid',
-          receiptUrl: urlLink,
-        });
-      }
+      await axios.patch(`/api/payments/${payment._id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
       Swal.fire('Submitted', 'Your receipt was uploaded. Please wait for admin approval.', 'success');
       setFiles((prev) => ({ ...prev, [payment._id]: null }));
-      setReceiptLinks((prev) => ({ ...prev, [payment._id]: '' }));
       fetchPayments();
     } catch (error: any) {
       console.error(error);
@@ -102,7 +110,7 @@ export function StudentPayments() {
         <p className="text-sm text-gray-500">No payment records found.</p>
       ) : (
         <div className="space-y-4">
-          {payments.map((p) => (
+          {currentPayments.map((p) => (
             <div
               key={p._id}
               className="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
@@ -122,9 +130,11 @@ export function StudentPayments() {
                       ? 'bg-green-100 text-green-700'
                       : p.status === 'paid'
                         ? 'bg-blue-100 text-blue-700'
-                        : p.status === 'overdue'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-yellow-100 text-yellow-800'
+                        : p.status === 'submitted'
+                          ? 'bg-indigo-100 text-indigo-800'
+                          : p.status === 'overdue'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-800'
                       }`}
                   >
                     {p.status}
@@ -149,15 +159,15 @@ export function StudentPayments() {
                 )}
               </div>
 
+
               {(p.status === 'pending' || p.status === 'overdue') && !p.receiptUrl && (
                 <div className="flex flex-col items-stretch gap-2 w-full md:w-80">
                   <div className="flex gap-2">
                     <input
-                      type="url"
-                      placeholder="Paste GDrive/Receipt Link here..."
-                      value={receiptLinks[p._id] || ''}
+                      type="file"
+                      accept="image/*"
                       onChange={(e) =>
-                        handleUrlChange(p._id, e.target.value)
+                        handleFileChange(p._id, e.target.files ? e.target.files[0] : null)
                       }
                       className="text-xs border rounded p-2 flex-grow min-w-0"
                     />
@@ -174,6 +184,38 @@ export function StudentPayments() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {maxPage > 1 && (
+        <div className="mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={(e) => { e.preventDefault(); prev(); }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+              {Array.from({ length: maxPage }).map((_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    isActive={currentPage === i + 1}
+                    onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={(e) => { e.preventDefault(); next(); }}
+                  className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 

@@ -8,6 +8,15 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from '../context/AuthContext';
 import { Tabs } from './ui/Tabs';
+import { usePagination } from '../hooks/usePagination';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./ui/pagination";
 
 interface Payment {
   id: number;
@@ -36,6 +45,7 @@ interface Student {
   _id: string; // Mongo ID is _id
   id?: string; // Virtual might exist
   studentId?: string;
+  student_id?: string;
   first_name?: string;
   last_name?: string;
   middle_initial?: string;
@@ -341,19 +351,16 @@ export function StudentsManagement() {
     }
   };
 
-  const [viewMode, setViewMode] = useState<'active' | 'pending'>('active');
-
   const filtered = students.filter((s) => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.studentProfile?.roomNumber?.includes(searchTerm) ||
       (s.studentId || s.student_id)?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesTab = viewMode === 'active'
-      ? s.studentProfile?.status === 'active'
-      : s.studentProfile?.status !== 'active'; // Inactive is pending
-
-    return matchesSearch && matchesTab;
+    return matchesSearch;
   });
+
+  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(filtered, 10);
+  const currentStudents = currentData();
 
   // ... (isAdmin check)
 
@@ -366,23 +373,9 @@ export function StudentsManagement() {
       {/* View Mode Tabs */}
       <div className="flex gap-4 border-b border-gray-200 mb-6">
         <button
-          className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${viewMode === 'active' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          onClick={() => setViewMode('active')}
+          className={`pb-2 px-4 font-semibold text-sm transition-colors relative text-[#001F3F] border-b-2 border-[#001F3F]`}
         >
-          Active Students
-        </button>
-        <button
-          className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${viewMode === 'pending' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          onClick={() => setViewMode('pending')}
-        >
-          Pending Approval
-          {students.filter(s => s.studentProfile?.status === 'inactive').length > 0 && (
-            <span className="ml-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-              {students.filter(s => s.studentProfile?.status === 'inactive').length}
-            </span>
-          )}
+          All Students
         </button>
       </div>
 
@@ -410,8 +403,8 @@ export function StudentsManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.length > 0 ? (
-              filtered.map((student) => (
+            {currentStudents.length > 0 ? (
+              currentStudents.map((student) => (
                 <tr key={student._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-semibold text-gray-900">{student.name}</div>
@@ -446,29 +439,16 @@ export function StudentsManagement() {
                       : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                       }`}>
                       {student.studentProfile?.status === 'active' ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
-                      {student.studentProfile?.status === 'active' ? 'Active' : 'Pending Approval'}
+                      {student.studentProfile?.status === 'active' ? 'Active' : 'Unverified/Inactive'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-1">
-                    {viewMode === 'pending' ? (
-                      <>
-                        <Button variant="ghost" size="icon" onClick={() => handleApprove(student)} className="h-8 w-8 text-green-600 hover:bg-green-50" title="Approve">
-                          <UserCheck className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleReject(student._id)} className="h-8 w-8 text-red-500 hover:bg-red-50" title="Reject">
-                          <UserX className="w-4 h-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="ghost" size="icon" onClick={() => openModal(student)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(student._id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
+                    <Button variant="ghost" size="icon" onClick={() => openModal(student)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(student._id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </td>
                 </tr>
               ))
@@ -477,13 +457,46 @@ export function StudentsManagement() {
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <Search className="w-8 h-8 opacity-20" />
-                    <p>No {viewMode} students found.</p>
+                    <p>No students found.</p>
                   </div>
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {maxPage > 1 && (
+          <div className="p-4 border-t border-gray-100">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={(e) => { e.preventDefault(); prev(); }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {Array.from({ length: maxPage }).map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={currentPage === i + 1}
+                      onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                      className="cursor-pointer"
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={(e) => { e.preventDefault(); next(); }}
+                    className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

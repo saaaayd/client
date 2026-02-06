@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
+import { useAuth } from '../context/AuthContext';
 
 interface RoomDto {
   _id: string;
@@ -14,7 +15,7 @@ interface RoomDto {
 }
 
 interface CleaningScheduleDto {
-  id: number;
+  _id: string;
   area: string;
   assignedTo: string; // Storing roomNumber or ID
   scheduledDate: string;
@@ -23,15 +24,16 @@ interface CleaningScheduleDto {
 }
 
 export function CleaningSchedule() {
+  const { user } = useAuth();
   const [schedules, setSchedules] = useState<CleaningScheduleDto[]>([]);
   const [rooms, setRooms] = useState<RoomDto[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     area: '',
     assignedTo: '',
-    scheduledDate: new Date().toISOString().split('T')[0],
+    scheduledDate: '',
     status: 'pending' as 'pending' | 'completed',
     notes: '',
   });
@@ -68,7 +70,7 @@ export function CleaningSchedule() {
 
   const openModal = (task: CleaningScheduleDto | null = null) => {
     if (task) {
-      setEditingId(task.id);
+      setEditingId(task._id);
       setFormData({
         area: task.area,
         assignedTo: task.assignedTo,
@@ -81,7 +83,7 @@ export function CleaningSchedule() {
       setFormData({
         area: '',
         assignedTo: '',
-        scheduledDate: new Date().toISOString().split('T')[0],
+        scheduledDate: '',
         status: 'pending',
         notes: '',
       });
@@ -113,7 +115,7 @@ export function CleaningSchedule() {
 
   const handleMarkComplete = async (task: CleaningScheduleDto) => {
     try {
-      await axios.put(`/api/cleaning-schedule/${task.id}`, {
+      await axios.put(`/api/cleaning-schedule/${task._id}`, {
         ...task,
         status: 'completed',
       });
@@ -125,7 +127,7 @@ export function CleaningSchedule() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     const res = await Swal.fire({
       title: 'Delete task?',
       text: 'This action cannot be undone.',
@@ -156,13 +158,15 @@ export function CleaningSchedule() {
           <p className="text-gray-600 text-sm mt-1">Manage and track dormitory cleaning tasks</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 bg-[#FFD700] text-[#001F3F] px-4 py-2 rounded-lg hover:bg-[#FFC700] transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add Task</span>
-          </Button>
+          {user?.role === 'admin' && (
+            <Button
+              onClick={() => openModal()}
+              className="flex items-center gap-2 bg-[#001F3F] text-white px-4 py-2 rounded-lg hover:bg-[#003366] transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Task</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -231,12 +235,12 @@ export function CleaningSchedule() {
                   <th className="px-6 py-3 text-left text-sm">Scheduled Date</th>
                   <th className="px-6 py-3 text-left text-sm">Status</th>
                   <th className="px-6 py-3 text-left text-sm">Notes</th>
-                  <th className="px-6 py-3 text-left text-sm">Actions</th>
+                  {user?.role === 'admin' && <th className="px-6 py-3 text-left text-sm">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {schedules.map((schedule) => (
-                  <tr key={schedule.id} className="hover:bg-gray-50">
+                  <tr key={schedule._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">{schedule.area}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{schedule.assignedTo || 'Unknown Room'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
@@ -267,31 +271,33 @@ export function CleaningSchedule() {
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {schedule.notes || '-'}
                     </td>
-                    <td className="px-6 py-4 flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openModal(schedule)}
-                      >
-                        <Edit className="w-4 h-4 text-blue-600" />
-                      </Button>
-                      {schedule.status === 'pending' && (
+                    {user?.role === 'admin' && (
+                      <td className="px-6 py-4 flex gap-2">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleMarkComplete(schedule)}
+                          onClick={() => openModal(schedule)}
                         >
-                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <Edit className="w-4 h-4 text-blue-600" />
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(schedule.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </td>
+                        {schedule.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleMarkComplete(schedule)}
+                          >
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(schedule._id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -324,7 +330,7 @@ export function CleaningSchedule() {
                 <div className="space-y-3">
                   {tasksForDate.map(schedule => (
                     <div
-                      key={schedule.id}
+                      key={schedule._id}
                       className={`border-l-4 pl-4 py-3 rounded-r ${schedule.status === 'completed'
                         ? 'border-green-500 bg-green-50'
                         : 'border-orange-500 bg-orange-50'
@@ -347,7 +353,7 @@ export function CleaningSchedule() {
                       {schedule.notes && (
                         <p className="text-sm text-gray-700">{schedule.notes}</p>
                       )}
-                      {schedule.status === 'pending' && (
+                      {schedule.status === 'pending' && user?.role === 'admin' && (
                         <button
                           className="mt-3 text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
                           onClick={() => handleMarkComplete(schedule)}
@@ -423,7 +429,7 @@ export function CleaningSchedule() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleSubmit} className="bg-[#001F3F]">
+            <Button onClick={handleSubmit} className="bg-[#001F3F] text-white hover:bg-[#003366]">
               Save
             </Button>
           </DialogFooter>

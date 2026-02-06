@@ -7,6 +7,15 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
+import { usePagination } from '../hooks/usePagination';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./ui/pagination";
 
 const currencyFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
@@ -31,7 +40,7 @@ export function PaymentsManagement() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ ...emptyPayment });
   const [bulkRows, setBulkRows] = useState([{ ...emptyPayment }]);
-  const [file, setFile] = useState<File | null>(null);
+  /* Removed unused file state & handler */
 
   // Receipt Modal State
   const [viewingPayment, setViewingPayment] = useState<any>(null);
@@ -41,12 +50,6 @@ export function PaymentsManagement() {
     fetchPayments();
     fetchStudents();
   }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
 
   const fetchPayments = async () => {
     const res = await axios.get('/api/payments');
@@ -209,8 +212,11 @@ export function PaymentsManagement() {
     total: payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),
     pending: payments.filter((p) => p.status === 'pending').length,
     overdue: payments.filter((p) => p.status === 'overdue').length,
-    awaitingApproval: payments.filter((p) => p.status === 'paid' && p.receipt_url && p.status !== 'verified').length,
+    awaitingApproval: payments.filter((p) => p.status === 'submitted').length,
   };
+
+  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(payments, 10);
+  const currentPayments = currentData();
 
   return (
     <div className="space-y-6">
@@ -268,7 +274,7 @@ export function PaymentsManagement() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {payments.map((p: any) => (
+            {currentPayments.map((p: any) => (
               <tr key={p.id}>
                 <td className="px-6 py-4">{p.student?.name || 'Unknown'}</td>
                 <td className="px-6 py-4">{currencyFormatter.format(Number(p.amount || 0))}</td>
@@ -278,35 +284,33 @@ export function PaymentsManagement() {
                 </td>
                 <td className="px-6 py-4 text-sm">
                   {p.receiptUrl ? (
-                    <div className="w-16 h-16 border rounded overflow-hidden relative group">
-                      <img
-                        src={p.receiptUrl}
-                        alt="Receipt"
-                        className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
                         onClick={() => window.open(p.receiptUrl, '_blank')}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).parentElement!.innerText = 'View Link';
-                          (e.target as HTMLImageElement).parentElement!.className = 'text-blue-600 underline text-xs flex items-center justify-center h-full cursor-pointer';
-                          (e.target as HTMLImageElement).parentElement!.onclick = () => window.open(p.receiptUrl, '_blank');
-                        }}
-                      />
+                      >
+                        View Receipt
+                      </Button>
                     </div>
                   ) : p.status === 'paid' ? (
-                    <span className="text-xs text-red-500 italic">There is no receipt yet</span>
+                    <span className="text-xs text-red-500 italic">No receipt</span>
                   ) : (
                     <span className="text-gray-400 text-xs">--</span>
                   )}
                 </td>
                 <td className="px-6 py-4">
                   <span
-                    className={`px-2 py-1 rounded text-xs ${p.status === 'verified'
+                    className={`px-2 py-1 rounded text-xs capitalize ${p.status === 'verified'
                       ? 'bg-green-100 text-green-800'
                       : p.status === 'paid'
                         ? 'bg-blue-100 text-blue-800'
-                        : p.status === 'overdue'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-yellow-100 text-yellow-800'
+                        : p.status === 'submitted'
+                          ? 'bg-indigo-100 text-indigo-800'
+                          : p.status === 'overdue'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-800'
                       }`}
                   >
                     {p.status}
@@ -339,6 +343,39 @@ export function PaymentsManagement() {
             ))}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {maxPage > 1 && (
+          <div className="p-4 border-t border-gray-100">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={(e) => { e.preventDefault(); prev(); }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {Array.from({ length: maxPage }).map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={currentPage === i + 1}
+                      onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                      className="cursor-pointer"
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={(e) => { e.preventDefault(); next(); }}
+                    className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       {/* Single payment modal */}
@@ -405,27 +442,11 @@ export function PaymentsManagement() {
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
                 <option value="pending">Pending</option>
-                <option value="paid">Paid (waiting approval)</option>
+                <option value="submitted">Submitted (Review)</option>
+                <option value="paid">Paid</option>
                 <option value="verified">Verified</option>
                 <option value="overdue">Overdue</option>
               </select>
-            </div>
-            <div>
-              <Label>Receipt / Proof</Label>
-              {formData.receiptUrl && !file && (
-                <div className="mb-2">
-                  <p className="text-xs text-gray-500 mb-1">Current Proof:</p>
-                  <a href={formData.receiptUrl} target="_blank" rel="noreferrer" className="block w-20 h-20 border rounded overflow-hidden">
-                    <img src={formData.receiptUrl} alt="Receipt" className="w-full h-full object-cover" />
-                  </a>
-                </div>
-              )}
-              <Input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={handleFileChange}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">Upload an image or PDF. This will replace any existing proof.</p>
             </div>
             <div>
               <Label>Notes</Label>

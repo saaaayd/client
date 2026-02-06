@@ -11,7 +11,8 @@ interface StudentPayment {
 }
 
 interface StudentRequest {
-  id: number;
+  _id: string; // Add _id
+  id?: number; // Keep optional for backward compat if needed
   title: string;
   description: string;
   urgency: 'low' | 'medium' | 'high';
@@ -39,7 +40,7 @@ export function StudentDashboard() {
       try {
         const [paymentsRes, requestsRes, announcementsRes] = await Promise.all([
           axios.get('/api/payments/my-history'),
-          axios.get('/api/maintenance-requests', { params: { student_id: user.id } }),
+          axios.get('/api/maintenance/my-requests'),
           axios.get('/api/announcements'),
         ]);
         setPayments(paymentsRes.data);
@@ -126,7 +127,7 @@ export function StudentDashboard() {
           <div className="space-y-3">
             {studentRequests.length > 0 ? (
               studentRequests.map((request) => (
-                <div key={request.id} className="border border-gray-200 rounded-lg p-4">
+                <div key={request._id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="text-[#001F3F]">{request.title}</h4>
                     <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${request.status === 'resolved'

@@ -3,6 +3,15 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
 import { Room } from '../types';
+import { usePagination } from '../hooks/usePagination';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "./ui/pagination";
 
 const RoomsManagement: React.FC = () => {
     const [rooms, setRooms] = useState<Room[]>([]);
@@ -124,6 +133,9 @@ const RoomsManagement: React.FC = () => {
         room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(filteredRooms, 10);
+    const currentRooms = currentData();
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -157,6 +169,7 @@ const RoomsManagement: React.FC = () => {
                             <tr>
                                 <th className="px-6 py-4">Room Number</th>
                                 <th className="px-6 py-4">Capacity</th>
+                                <th className="px-6 py-4">Availability</th>
                                 <th className="px-6 py-4">Price</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Features</th>
@@ -168,15 +181,24 @@ const RoomsManagement: React.FC = () => {
                                 <tr>
                                     <td colSpan={7} className="text-center py-8 text-slate-500">Loading...</td>
                                 </tr>
-                            ) : filteredRooms.length === 0 ? (
+                            ) : currentRooms.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-8 text-slate-500">No rooms found</td>
                                 </tr>
                             ) : (
-                                filteredRooms.map((room) => (
+                                currentRooms.map((room) => (
                                     <tr key={room._id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{room.roomNumber}</td>
                                         <td className="px-6 py-4">{room.capacity}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`font-bold ${(room.capacity - (room.students_count || 0)) === 0 ? 'text-red-600' : 'text-green-600'
+                                                }`}>
+                                                {Math.max(0, room.capacity - (room.students_count || 0))} slots
+                                            </span>
+                                            <span className="text-xs text-gray-400 block">
+                                                ({room.students_count || 0} occupied)
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4">{currencyFormatter.format(room.price)}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${room.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
@@ -210,6 +232,38 @@ const RoomsManagement: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+                    {/* Pagination Controls */}
+                    {maxPage > 1 && (
+                        <div className="p-4 border-t border-gray-100">
+                            <Pagination>
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            onClick={(e) => { e.preventDefault(); prev(); }}
+                                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                        />
+                                    </PaginationItem>
+                                    {Array.from({ length: maxPage }).map((_, i) => (
+                                        <PaginationItem key={i}>
+                                            <PaginationLink
+                                                isActive={currentPage === i + 1}
+                                                onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                                                className="cursor-pointer"
+                                            >
+                                                {i + 1}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    ))}
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            onClick={(e) => { e.preventDefault(); next(); }}
+                                            className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
+                        </div>
+                    )}
                 </div>
             </div>
 

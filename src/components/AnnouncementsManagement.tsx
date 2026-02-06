@@ -7,6 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { useAuth } from '../context/AuthContext';
+import { usePagination } from '../hooks/usePagination';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./ui/pagination";
 
 interface AnnouncementDto {
   id: number;
@@ -24,18 +33,18 @@ export function AnnouncementsManagement() {
   const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
+
   // FIX: Explicitly define the type for formData so priority can be any of the 3 values
   const [formData, setFormData] = useState<{
     title: string;
     content: string;
     priority: AnnouncementDto['priority'];
-  }>({ 
-    title: '', 
-    content: '', 
-    priority: 'normal' 
+  }>({
+    title: '',
+    content: '',
+    priority: 'normal'
   });
-  
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -134,6 +143,9 @@ export function AnnouncementsManagement() {
     return 'bg-blue-100 text-blue-700';
   };
 
+  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(announcements, 5);
+  const currentAnnouncements = currentData();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -141,7 +153,7 @@ export function AnnouncementsManagement() {
         {isAdmin && (
           <Button
             onClick={() => openModal()}
-            className="bg-[#FFD700] text-[#001F3F] hover:bg-[#FFC700] font-semibold"
+            className="bg-[#001F3F] text-white hover:bg-[#003366] font-semibold"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create
@@ -150,7 +162,7 @@ export function AnnouncementsManagement() {
       </div>
 
       <div className="grid gap-4">
-        {announcements.map((a) => (
+        {currentAnnouncements.map((a) => (
           <div
             key={a.id}
             className={`bg-white p-4 rounded-lg shadow-sm border-l-4 ${priorityColor(a.priority)} transition-all hover:shadow-md`}
@@ -169,12 +181,12 @@ export function AnnouncementsManagement() {
                 </div>
                 <p className="text-gray-600 whitespace-pre-line text-sm leading-relaxed">{a.content}</p>
                 <div className="mt-3 text-xs text-gray-400 flex items-center gap-1">
-                   <span>Posted by: {a.creator?.name || 'System Admin'}</span>
-                   <span>•</span>
-                   <span>{new Date(a.created_at).toLocaleDateString()}</span>
+                  <span>Posted by: {a.creator?.name || 'System Admin'}</span>
+                  <span>•</span>
+                  <span>{new Date(a.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
-              
+
               {isAdmin && (
                 <div className="flex flex-col gap-2">
                   <Button size="icon" variant="ghost" onClick={() => openModal(a)} className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50">
@@ -188,7 +200,39 @@ export function AnnouncementsManagement() {
             </div>
           </div>
         ))}
-        
+
+        {maxPage > 1 && (
+          <div className="p-4 border-t border-gray-100">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={(e) => { e.preventDefault(); prev(); }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                {Array.from({ length: maxPage }).map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={currentPage === i + 1}
+                      onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                      className="cursor-pointer"
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={(e) => { e.preventDefault(); next(); }}
+                    className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+
         {announcements.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
             <AlertCircle className="w-10 h-10 mb-2 opacity-20" />
@@ -230,7 +274,7 @@ export function AnnouncementsManagement() {
               </select>
             </div>
             <div>
-               <label className="text-xs font-semibold text-gray-500 mb-1 block">Content</label>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Content</label>
               <Textarea
                 placeholder="Write your announcement here..."
                 rows={6}

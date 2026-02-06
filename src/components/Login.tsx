@@ -5,6 +5,7 @@ import { Lock, Mail, AlertCircle, ShieldCheck, User } from 'lucide-react';
 
 export function Login() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [step, setStep] = useState<'details' | 'otp'>('details');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -12,11 +13,13 @@ export function Login() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [middleInitial, setMiddleInitial] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const { login, googleLogin, isLoading, setSessionFromOauth } = useAuth();
 
-  // Removed legacy redirect-based useEffect
+  // To store email for OTP verification
+  const [registerEmail, setRegisterEmail] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,34 +92,69 @@ export function Login() {
             phoneNumber: '',
             emergencyContactName: '',
             emergencyContactPhone: '',
-            status: 'active'
+            status: 'inactive' // Initially inactive until OTP
           }
         }),
       });
 
       if (!res.ok) {
-        // FIX: Cast the response data to 'any' to avoid "Object is of type 'unknown'" error
         const data = await res.json().catch(() => ({})) as any;
-
-        // Safe extraction of Laravel validation error message
         let errorMessage = data.message || 'Registration failed';
-
         if (data.errors) {
           const errorValues = Object.values(data.errors);
           if (errorValues.length > 0 && Array.isArray(errorValues[0]) && errorValues[0].length > 0) {
             errorMessage = String(errorValues[0][0]);
           }
         }
-
         throw new Error(errorMessage);
       }
 
-      setSuccess('Account created. Please wait for admin approval.');
-      setMode('login'); // Switch back to login view so they see the message
-      // window.location.href = '/pending-approval'; // Removed
-      // We can clear fields if needed, but switching mode is usually enough context switch
+      const data = await res.json();
+      setRegisterEmail(identifier);
+      setSuccess('OTP sent to your email. Please check inbox/spam.');
+      setStep('otp');
+
     } catch (err: any) {
       setError(err.message || 'Registration failed');
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: registerEmail,
+          otp
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Verification failed');
+      }
+
+      // Success - Login the user directly using the token from verify-otp response
+      if (data.token) {
+        setSessionFromOauth(data.token, data);
+      } else {
+        setSuccess('Verification successful. Please login.');
+        setMode('login');
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'OTP Verification failed');
     }
   };
 
@@ -153,7 +191,7 @@ export function Login() {
           <div className="flex mb-6 rounded-lg overflow-hidden border border-gray-200">
             <button
               type="button"
-              onClick={() => setMode('login')}
+              onClick={() => { setMode('login'); setStep('details'); setError(''); setSuccess(''); }}
               className={`flex-1 py-2 text-sm font-medium ${!isRegister ? 'bg-[#001F3F] text-white' : 'bg-white text-gray-700'
                 }`}
             >
@@ -161,7 +199,7 @@ export function Login() {
             </button>
             <button
               type="button"
-              onClick={() => setMode('register')}
+              onClick={() => { setMode('register'); setStep('details'); setError(''); setSuccess(''); }}
               className={`flex-1 py-2 text-sm font-medium ${isRegister ? 'bg-[#001F3F] text-white' : 'bg-white text-gray-700'
                 }`}
             >
@@ -170,105 +208,153 @@ export function Login() {
           </div>
 
           {isRegister ? (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            step === 'details' ? (
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="firstName"
+                      autoComplete="given-name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Middle Initial</label>
+                    <input
+                      type="text"
+                      name="middleInitial"
+                      autoComplete="additional-name"
+                      value={middleInitial}
+                      onChange={(e) => setMiddleInitial(e.target.value)}
+                      maxLength={5}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">
-                    First Name <span className="text-red-500">*</span>
+                    Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    name="lastName"
+                    autoComplete="family-name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Middle Initial</label>
-                  <input
-                    type="text"
-                    value={middleInitial}
-                    onChange={(e) => setMiddleInitial(e.target.value)}
-                    maxLength={5}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Last Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">
-                  Student ID <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
-                    placeholder="e.g. 2025-001"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-700 mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">Password</label>
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Student ID <span className="text-red-500">*</span>
+                  </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      type="text"
+                      name="studentId"
+                      autoComplete="off"
+                      value={studentId}
+                      onChange={(e) => setStudentId(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                      placeholder="e.g. 2025-001"
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Confirm Password</label>
+                  <label className="block text-sm text-gray-700 mb-1">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      name="email"
+                      autoComplete="email"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        name="password"
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Confirm Password</label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Sending OTP...' : 'Next: Verify Email'}
+                </button>
+              </form>
+            ) : (
+              // OTP Step
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="text-center mb-4">
+                  <p className="text-gray-600">Enter the 6-digit code sent to <span className="font-bold">{registerEmail}</span></p>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1 text-center">One-Time Password (OTP)</label>
                   <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full text-center text-2xl tracking-[0.5em] font-bold px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                    placeholder="000000"
                     required
                   />
                 </div>
-              </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Registering...' : 'Register as Student'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Verifying...' : 'Verify & Login'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep('details')}
+                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Back to Details
+                </button>
+              </form>
+            )
           ) : (
             <>
               <form onSubmit={handleLogin} className="space-y-4">
@@ -278,6 +364,8 @@ export function Login() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
+                      name="identifier"
+                      autoComplete="username"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
@@ -293,6 +381,8 @@ export function Login() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="password"
+                      name="password"
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
