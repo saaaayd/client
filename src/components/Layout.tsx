@@ -30,7 +30,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const adminMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'rooms', label: 'Rooms', icon: BedDouble },
-    { id: 'students', label: 'Students', icon: Users },
+    { id: 'students', label: 'Student & Staff Management', icon: Users },
     { id: 'payments', label: 'Payments', icon: PhilippinePeso },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'attendance', label: 'Attendance', icon: Clock },
@@ -68,7 +68,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${isActive
                   ? 'bg-[#FFD700] text-[#001F3F]'
                   : 'text-white/80 hover:bg-white/10'
                   }`}
@@ -121,7 +121,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
                       onNavigate(item.id);
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${isActive
                       ? 'bg-[#FFD700] text-[#001F3F]'
                       : 'text-white/80 hover:bg-white/10'
                       }`}

@@ -7,7 +7,7 @@ import { Login } from './components/Login';
 import { Layout } from './components/Layout';
 import { AdminDashboard } from './components/AdminDashboard';
 import { StudentDashboard } from './components/StudentDashboard';
-import { StudentsManagement } from './components/StudentsManagement';
+import { UserManagement } from './components/UserManagement';
 import { PaymentsManagement } from './components/PaymentsManagement';
 import { MaintenanceManagement } from './components/MaintenanceManagement';
 import { AttendanceManagement } from './components/AttendanceManagement';
@@ -59,21 +59,40 @@ function AppContent() {
         case 'dashboard':
           return <AdminDashboard />;
         case 'rooms':
-          return <RoomsManagement />; // Added route
+          return <RoomsManagement />;
         case 'students':
-          return <StudentsManagement />;
+          // Use UserManagement for admin users
+          return <UserManagement />;
         case 'payments':
           return <PaymentsManagement />;
         case 'maintenance':
           return <MaintenanceManagement />;
         case 'attendance':
-          return <AttendanceManagement />; // Assuming AttendanceManagement is the admin version
+          return <AttendanceManagement />;
         case 'cleaning':
           return <CleaningSchedule />;
         case 'announcements':
           return <AnnouncementsManagement />;
         case 'logs':
           return <SystemLogs />;
+        default:
+          return <AdminDashboard />;
+      }
+    } else if (user.role === 'staff') { // Staff role
+      switch (currentPage) {
+        case 'dashboard':
+          // Staff might share admin dashboard or have a reduced one. 
+          // For now, let's reuse AdminDashboard or give them access to common modules.
+          // Prompt says: "Staff can view room assignments, student lists"
+          return <AdminDashboard />;
+        case 'rooms':
+          return <RoomsManagement />;
+        case 'students':
+          return <UserManagement />;
+        case 'maintenance':
+          return <MaintenanceManagement />;
+        case 'attendance':
+          return <AttendanceManagement />;
         default:
           return <AdminDashboard />;
       }
@@ -423,8 +442,8 @@ function StudentPayments() {
                       {currencyFormatter.format(Number(payment.amount || 0))}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {payment.due_date
-                        ? new Date(payment.due_date).toLocaleDateString()
+                      {payment.dueDate
+                        ? new Date(payment.dueDate).toLocaleDateString()
                         : '--'}
                     </td>
                     <td className="px-6 py-4">
@@ -443,7 +462,7 @@ function StudentPayments() {
                       {payment.notes || '—'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {(payment.status === 'pending' || payment.status === 'overdue') && !payment.receipt_url ? (
+                      {(payment.status === 'pending' || payment.status === 'overdue') && !payment.receiptUrl ? (
                         <div className="flex flex-col gap-2">
                           <input
                             type="file"
@@ -461,9 +480,9 @@ function StudentPayments() {
                             {submittingId === payment._id ? 'Submitting...' : 'Submit Receipt'}
                           </button>
                         </div>
-                      ) : payment.receipt_url ? (
+                      ) : payment.receiptUrl ? (
                         <a
-                          href={payment.receipt_url}
+                          href={payment.receiptUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="text-blue-600 underline text-xs"

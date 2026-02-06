@@ -35,6 +35,7 @@ const emptyPayment = {
 export function PaymentsManagement() {
   const [payments, setPayments] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,6 +50,7 @@ export function PaymentsManagement() {
   useEffect(() => {
     fetchPayments();
     fetchStudents();
+    fetchRooms();
   }, []);
 
   const fetchPayments = async () => {
@@ -59,6 +61,47 @@ export function PaymentsManagement() {
   const fetchStudents = async () => {
     const res = await axios.get('/api/students');
     setStudents(res.data);
+  };
+
+  const fetchRooms = async () => {
+    try {
+      const res = await axios.get('/api/rooms'); // Assuming this endpoint exists and is accessible
+      setRooms(res.data);
+    } catch (error) {
+      console.error("Failed to fetch rooms for pricing lookup", error);
+    }
+  };
+
+  const getRentPrice = (studentId: string) => {
+    const student = students.find(s => s._id === studentId);
+    if (!student || !student.studentProfile?.roomNumber) return '';
+
+    const room = rooms.find(r => r.roomNumber === student.studentProfile.roomNumber);
+    return room ? String(room.price) : '';
+  };
+
+  const handleStudentChange = (studentId: string) => {
+    let newAmount = formData.amount;
+
+    // Auto-fill rent if type is rent
+    if (formData.type === 'rent') {
+      const rent = getRentPrice(studentId);
+      if (rent) newAmount = rent;
+    }
+
+    setFormData({ ...formData, student_id: studentId, amount: newAmount });
+  };
+
+  const handleTypeChange = (type: string) => {
+    let newAmount = formData.amount;
+
+    // Auto-fill rent if switching TO rent and student is selected
+    if (type === 'rent' && formData.student_id) {
+      const rent = getRentPrice(formData.student_id);
+      if (rent) newAmount = rent;
+    }
+
+    setFormData({ ...formData, type, amount: newAmount });
   };
 
   const openModal = (payment: any = null) => {
@@ -169,7 +212,28 @@ export function PaymentsManagement() {
 
   const updateBulkRow = (idx: number, field: string, value: string) => {
     setBulkRows((rows) =>
-      rows.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+      rows.map((row, i) => {
+        if (i !== idx) return row;
+
+        const updatedRow = { ...row, [field]: value };
+
+        // Bulk Auto-fill Logic
+        if (field === 'student_id') {
+          if (updatedRow.type === 'rent') {
+            const rent = getRentPrice(value);
+            if (rent) updatedRow.amount = rent;
+          }
+        }
+
+        if (field === 'type') {
+          if (value === 'rent' && updatedRow.student_id) {
+            const rent = getRentPrice(updatedRow.student_id);
+            if (rent) updatedRow.amount = rent;
+          }
+        }
+
+        return updatedRow;
+      })
     );
   };
 
@@ -393,7 +457,7 @@ export function PaymentsManagement() {
               <select
                 className="w-full border rounded p-2"
                 value={formData.student_id}
-                onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                onChange={(e) => handleStudentChange(e.target.value)}
               >
                 <option value="">Select Student</option>
                 {students.map((s: any) => (
@@ -418,7 +482,7 @@ export function PaymentsManagement() {
               <select
                 className="w-full border rounded p-2"
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => handleTypeChange(e.target.value)}
               >
                 <option value="rent">Rent</option>
                 <option value="utilities">Utilities</option>
@@ -497,7 +561,7 @@ export function PaymentsManagement() {
                     >
                       <option value="">Select Student</option>
                       {students.map((s: any) => (
-                        <option key={s.id} value={s.id}>
+                        <option key={s._id} value={s._id}>
                           {s.name}
                         </option>
                       ))}
