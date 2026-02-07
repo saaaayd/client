@@ -42,9 +42,12 @@ interface Student {
 
 interface Staff {
     _id: string;
-    name: string;
+    name: string; // The backend returns 'name' (virtual/populated) for display
+    firstName?: string;
+    lastName?: string;
+    middleInitial?: string;
     email: string;
-    role: 'staff';
+    role: 'staff' | 'admin' | 'manager' | 'super_admin';
     status: 'active' | 'inactive';
     createdAt: string;
 }
@@ -60,15 +63,24 @@ export function UserManagement() {
     const { user } = useAuth();
     const isAdmin = user?.role === 'admin';
 
-    const [activeUserTab, setActiveUserTab] = useState<'students' | 'staff'>('students');
+    const [activeUserTab, setActiveUserTab] = useState<'students' | 'employees'>('students');
     const [students, setStudents] = useState<Student[]>([]);
-    const [staffList, setStaffList] = useState<Staff[]>([]);
+    const [employeeList, setEmployeeList] = useState<Staff[]>([]);
     const [rooms, setRooms] = useState<Room[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isStaffModalOpen, setIsStaffModalOpen] = useState(false); // Separate modal for adding staff
+    const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+
+    // Role Edit State
+    const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+    const [roleEditData, setRoleEditData] = useState<{ id: string, name: string, currentRole: string, newRole: string } | null>(null);
+
     const [editingId, setEditingId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // Permissions
+    const isSuperAdmin = user?.role === 'super_admin';
+    const canManageEmployees = ['admin', 'manager', 'super_admin'].includes(user?.role || '');
 
     // Student Form State
     const initialStudentForm = {
@@ -79,30 +91,32 @@ export function UserManagement() {
         email: '',
         room_id: '',
         phone_number: '',
+        enrollment_date: '',
         emergency_contact_name: '',
         emergency_contact_phone: '',
         status: 'active' as 'active' | 'inactive',
     };
     const [studentFormData, setStudentFormData] = useState(initialStudentForm);
-
-    // Staff Form State
     const initialStaffForm = {
-        name: '',
+        firstName: '',
+        lastName: '',
+        middleInitial: '',
+        name: '', // Deprecated for input, used for display fallback
         email: '',
         password: '',
     };
     const [staffFormData, setStaffFormData] = useState(initialStaffForm);
 
     useEffect(() => {
-        if (isAdmin || user?.role === 'staff') {
+        if (canManageEmployees || user?.role === 'staff') {
             if (activeUserTab === 'students') {
                 fetchStudents();
                 fetchRooms();
             } else {
-                fetchStaff();
+                fetchEmployees();
             }
         }
-    }, [isAdmin, user?.role, activeUserTab]);
+    }, [canManageEmployees, user?.role, activeUserTab]);
 
     const fetchStudents = async () => {
         try {
@@ -113,12 +127,12 @@ export function UserManagement() {
         }
     };
 
-    const fetchStaff = async () => {
+    const fetchEmployees = async () => {
         try {
-            const res = await axios.get('/api/users/staff');
-            setStaffList(res.data);
+            const res = await axios.get('/api/users/staff'); // Endpoint returns all employees now
+            setEmployeeList(res.data);
         } catch (err) {
-            console.error('Error fetching staff:', err);
+            console.error('Error fetching employees:', err);
         }
     };
 
@@ -148,6 +162,7 @@ export function UserManagement() {
                 email: student.email,
                 room_id: student.studentProfile?.room_id?.toString() || '',
                 phone_number: student.studentProfile?.phoneNumber || '',
+                enrollment_date: '',
                 emergency_contact_name: student.studentProfile?.emergencyContactName || '',
                 emergency_contact_phone: student.studentProfile?.emergencyContactPhone || '',
                 status: student.studentProfile?.status || 'active'
@@ -210,7 +225,7 @@ export function UserManagement() {
     };
 
 
-    // --- Staff Actions ---
+    // --- Staff/Employee Actions ---
 
     const openStaffModal = () => {
         setStaffFormData(initialStaffForm);
@@ -218,28 +233,51 @@ export function UserManagement() {
     };
 
     const handleStaffSubmit = async () => {
-        if (!staffFormData.name || !staffFormData.email || !staffFormData.password) {
-            Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill in all fields.' });
+        if (!staffFormData.firstName || !staffFormData.lastName || !staffFormData.email || !staffFormData.password) {
+            Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill in Name, Email and Password.' });
             return;
         }
 
         setLoading(true);
         try {
             await axios.post('/api/users/staff', staffFormData);
-            Swal.fire({ icon: 'success', title: 'Created', text: 'New staff member added.', timer: 1500, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'Created', text: 'New employee added.', timer: 1500, showConfirmButton: false });
             setIsStaffModalOpen(false);
-            fetchStaff();
+            fetchEmployees();
         } catch (error: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to add staff.' });
+            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to add employee.' });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const openRoleModal = (employee: Staff) => {
+        setRoleEditData({
+            id: employee._id,
+            name: employee.name,
+            currentRole: employee.role,
+            newRole: employee.role
+        });
+        setIsRoleModalOpen(true);
+    };
+
+    const handleRoleUpdate = async () => {
+        if (!roleEditData) return;
+
+        try {
+            await axios.put(`/api/users/${roleEditData.id}/role`, { role: roleEditData.newRole });
+            Swal.fire('Updated', 'User role updated successfully.', 'success');
+            setIsRoleModalOpen(false);
+            fetchEmployees();
+        } catch (error: any) {
+            Swal.fire('Error', error.response?.data?.message || 'Failed to update role.', 'error');
         }
     };
 
     // --- Filtering & Pagination ---
 
     // We filter based on the active tab's data
-    const dataToFilter = activeUserTab === 'students' ? students : staffList;
+    const dataToFilter = activeUserTab === 'students' ? students : employeeList;
 
     const filtered = (dataToFilter as any[]).filter((item) => {
         const term = searchTerm.toLowerCase();
@@ -251,7 +289,8 @@ export function UserManagement() {
         } else {
             const s = item as Staff;
             return s.name.toLowerCase().includes(term) ||
-                s.email.toLowerCase().includes(term);
+                s.email.toLowerCase().includes(term) ||
+                s.role.toLowerCase().includes(term);
         }
     });
 
@@ -264,13 +303,13 @@ export function UserManagement() {
                 <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
 
                 {/* Add Button based on Tab */}
-                {isAdmin && (
+                {canManageEmployees && (
                     <Button
                         onClick={() => activeUserTab === 'students' ? openStudentModal() : openStaffModal()}
                         className="bg-[#001F3F] text-white hover:bg-[#003366] gap-2"
                     >
                         <Plus className="w-4 h-4" />
-                        {activeUserTab === 'students' ? 'Add Student' : 'Add Staff'}
+                        {activeUserTab === 'students' ? 'Add Student' : 'Add Employee'}
                     </Button>
                 )}
             </div>
@@ -283,12 +322,14 @@ export function UserManagement() {
                 >
                     All Students
                 </button>
-                <button
-                    onClick={() => { setActiveUserTab('staff'); setSearchTerm(''); }}
-                    className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${activeUserTab === 'staff' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'}`}
-                >
-                    All Staff
-                </button>
+                {canManageEmployees && (
+                    <button
+                        onClick={() => { setActiveUserTab('employees'); setSearchTerm(''); }}
+                        className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${activeUserTab === 'employees' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        All Employees
+                    </button>
+                )}
             </div>
 
             {/* Search */}
@@ -296,7 +337,7 @@ export function UserManagement() {
                 <div className="relative max-w-md w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
-                        placeholder={activeUserTab === 'students' ? "Search by name, ID, or room..." : "Search by name or email..."}
+                        placeholder={activeUserTab === 'students' ? "Search by name, ID, or room..." : "Search by name, email, or role..."}
                         className="pl-10 border-gray-200"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -305,15 +346,130 @@ export function UserManagement() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-100">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {currentItems.length > 0 ? (
+                    currentItems.map((item: any) => (
+                        <div key={item._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                            <div className="flex justify-between items-start mb-3">
+                                <div>
+                                    <div className="font-semibold text-gray-900">{item.name}</div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        {activeUserTab === 'students' ? (
+                                            (item.studentId || item.student_id) && (
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Hash className="w-3 h-3" /> {item.studentId || item.student_id}
+                                                </span>
+                                            )
+                                        ) : (
+                                            <span className="flex items-center gap-1">
+                                                <Mail className="w-3 h-3" /> {item.email}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                {activeUserTab === 'students' ? (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${item.studentProfile?.status === 'active'
+                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                        : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                        }`}>
+                                        {item.studentProfile?.status === 'active' ? 'Active' : 'Inactive'}
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                        Active
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex justify-between items-center text-sm text-gray-600 mb-3">
+                                {activeUserTab === 'students' ? (
+                                    <span className="font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                                        Room: {item.studentProfile?.roomNumber || 'N/A'}
+                                    </span>
+                                ) : (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
+                                        item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                            'bg-blue-100 text-blue-700'
+                                        }`}>
+                                        <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
+                                    </span>
+                                )}
+                            </div>
+
+                            {activeUserTab === 'students' && (
+                                <div className="text-sm text-gray-600 mb-3">
+                                    {item.studentProfile?.phoneNumber ? (
+                                        <div className="flex items-center gap-2">
+                                            <Phone className="w-3 h-3" /> {item.studentProfile.phoneNumber}
+                                        </div>
+                                    ) : <span className="text-xs text-gray-400 italic">No phone</span>}
+                                </div>
+                            )}
+
+                            {canManageEmployees && (
+                                <div className="flex justify-end gap-2 border-t pt-3 mt-2">
+                                    {activeUserTab === 'students' && (
+                                        <Button variant="ghost" size="sm" onClick={() => openStudentModal(item)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8">
+                                            <Edit className="w-4 h-4 mr-1" /> Edit
+                                        </Button>
+                                    )}
+                                    {activeUserTab === 'employees' && isSuperAdmin && (
+                                        <Button variant="ghost" size="sm" onClick={() => openRoleModal(item)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
+                                            <Edit className="w-4 h-4 mr-1" /> Role
+                                        </Button>
+                                    )}
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteStudent(item._id)} className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8">
+                                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                ) : (
+                    <div className="p-8 text-center text-gray-500 bg-white rounded-lg border border-gray-100">
+                        <div className="flex flex-col items-center gap-2">
+                            <Search className="w-8 h-8 opacity-20" />
+                            <p>No {activeUserTab} found.</p>
+                        </div>
+                    </div>
+                )}
+                {/* Pagination Controls Mobile */}
+                {maxPage > 1 && (
+                    <div className="flex justify-center pt-2">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={(e) => { e.preventDefault(); prev(); }}
+                                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                                <PaginationItem>
+                                    <span className="mx-2 text-sm">{currentPage} / {maxPage}</span>
+                                </PaginationItem>
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={(e) => { e.preventDefault(); next(); }}
+                                        className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden border border-gray-100">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-[#001F3F] text-white uppercase text-xs">
                         <tr>
                             <th className="px-6 py-4 font-semibold tracking-wider">Name</th>
                             <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Room' : 'Email'}</th>
-                            <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Contact' : 'Role'}</th>
+                            <th className="px-6 py-4 font-semibold tracking-wider">Role</th>
                             <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
-                            {isAdmin && <th className="px-6 py-4 text-right font-semibold tracking-wider">Actions</th>}
+                            {canManageEmployees && <th className="px-6 py-4 text-right font-semibold tracking-wider">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -349,8 +505,11 @@ export function UserManagement() {
                                                 </div>
                                             ) : <span className="text-xs text-gray-400 italic">Not set</span>
                                         ) : (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                                <Shield className="w-3 h-3" /> Staff
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
+                                                item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
                                             </span>
                                         )}
                                     </td>
@@ -369,14 +528,18 @@ export function UserManagement() {
                                             </span>
                                         )}
                                     </td>
-                                    {isAdmin && (
+                                    {canManageEmployees && (
                                         <td className="px-6 py-4 text-right flex justify-end gap-1">
                                             {activeUserTab === 'students' && (
                                                 <Button variant="ghost" size="icon" onClick={() => openStudentModal(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
                                             )}
-                                            {/* For Staff, minimal actions for now, or delete allowed */}
+                                            {activeUserTab === 'employees' && isSuperAdmin && (
+                                                <Button variant="ghost" size="icon" onClick={() => openRoleModal(item)} className="h-8 w-8 text-indigo-600 hover:bg-indigo-50">
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                            )}
                                             <Button variant="ghost" size="icon" onClick={() => handleDeleteStudent(item._id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
@@ -458,6 +621,7 @@ export function UserManagement() {
                             <Label>Student ID</Label>
                             <Input value={studentFormData.student_id} onChange={e => setStudentFormData({ ...studentFormData, student_id: e.target.value })} />
                         </div>
+
                         <div>
                             <Label>Room</Label>
                             <select
@@ -481,16 +645,35 @@ export function UserManagement() {
             <Dialog open={isStaffModalOpen} onOpenChange={setIsStaffModalOpen}>
                 <DialogContent className="sm:max-w-[500px] bg-white z-[100]">
                     <DialogHeader>
-                        <DialogTitle className="text-[#001F3F] text-xl font-bold">Add Staff Member</DialogTitle>
+                        <DialogTitle className="text-[#001F3F] text-xl font-bold">Add Employee</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                        <div>
-                            <Label>Name</Label>
-                            <Input
-                                value={staffFormData.name}
-                                onChange={e => setStaffFormData({ ...staffFormData, name: e.target.value })}
-                                placeholder="Full Name"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label>First Name <span className="text-red-500">*</span></Label>
+                                <Input
+                                    value={staffFormData.firstName}
+                                    onChange={e => setStaffFormData({ ...staffFormData, firstName: e.target.value })}
+                                    placeholder="First Name"
+                                />
+                            </div>
+                            <div>
+                                <Label>Last Name <span className="text-red-500">*</span></Label>
+                                <Input
+                                    value={staffFormData.lastName}
+                                    onChange={e => setStaffFormData({ ...staffFormData, lastName: e.target.value })}
+                                    placeholder="Last Name"
+                                />
+                            </div>
+                            <div className="col-span-2">
+                                <Label>Middle Initial</Label>
+                                <Input
+                                    value={staffFormData.middleInitial}
+                                    onChange={e => setStaffFormData({ ...staffFormData, middleInitial: e.target.value })}
+                                    placeholder="M.I."
+                                    maxLength={2}
+                                />
+                            </div>
                         </div>
                         <div>
                             <Label>Email</Label>
@@ -513,10 +696,40 @@ export function UserManagement() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsStaffModalOpen(false)}>Cancel</Button>
-                        <Button onClick={handleStaffSubmit} className="bg-[#001F3F] text-white">Create Staff</Button>
+                        <Button onClick={handleStaffSubmit} className="bg-[#001F3F] text-white">Create</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Role Edit Modal */}
+            {isRoleModalOpen && roleEditData && (
+                <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
+                    <DialogContent className="sm:max-w-[400px] bg-white z-[100]">
+                        <DialogHeader>
+                            <DialogTitle className="text-[#001F3F] text-xl font-bold">Change Role</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <p className="text-sm text-gray-500">Updating role for <strong>{roleEditData.name}</strong></p>
+                            <div>
+                                <Label>Role</Label>
+                                <select
+                                    className="w-full border rounded p-2 mt-1"
+                                    value={roleEditData.newRole}
+                                    onChange={(e) => setRoleEditData({ ...roleEditData, newRole: e.target.value })}
+                                >
+                                    <option value="staff">Staff</option>
+                                    <option value="manager">Manager</option>
+                                    {/* <option value="admin">Admin</option> legacy */}
+                                </select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsRoleModalOpen(false)}>Cancel</Button>
+                            <Button onClick={handleRoleUpdate} className="bg-[#001F3F] text-white">Update Role</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }

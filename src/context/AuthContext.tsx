@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
   googleLogin: (credential: string) => Promise<any>;
   setSessionFromOauth: (token: string, apiUser: any) => void;
+  updateProfile: (data: any) => Promise<any>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -37,15 +38,19 @@ function mapApiUser(apiUser: any): User {
   return {
     id: apiUser.id || apiUser._id,
     name: apiUser.name,
+    firstName: apiUser.firstName,
+    lastName: apiUser.lastName,
+    middleInitial: apiUser.middleInitial,
     email: apiUser.email,
     role: apiUser.role,
     status: apiUser.status || 'approved', // Default to approved for existing users
     studentProfile: studentProfile,
+    studentId: apiUser.studentId
   }
 }
 
 function persistSession(token: string, user: User) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user }));
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user }));
   axios.defaults.headers.common.Authorization = `Bearer ${token}`;
 }
 
@@ -55,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = sessionStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
       setUser(parsed.user);
@@ -66,7 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setSession = (nextToken: string, apiUser: any) => {
+    console.log('setSession apiUser:', apiUser);
     const mapped = mapApiUser(apiUser);
+    console.log('setSession mapped:', mapped);
     setUser(mapped);
     setToken(nextToken);
     persistSession(nextToken, mapped);
@@ -105,15 +112,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(nextToken, apiUser);
   };
 
+  const updateProfile = async (data: any) => {
+    setIsLoading(true);
+    try {
+      const res = await axios.put('/api/auth/profile', data);
+      // If backend doesn't return a new token, keep the old one
+      setSession(res.data.token || token!, res.data);
+      return res.data;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
     delete axios.defaults.headers.common.Authorization;
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, googleLogin, setSessionFromOauth, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, googleLogin, setSessionFromOauth, updateProfile, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

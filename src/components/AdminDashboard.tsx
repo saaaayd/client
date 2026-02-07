@@ -33,7 +33,11 @@ interface DashboardMaintenance {
   };
 }
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  onNavigate: (page: string) => void;
+}
+
+export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentAnnouncements, setRecentAnnouncements] = useState<DashboardAnnouncement[]>([]);
   const [urgentMaintenance, setUrgentMaintenance] = useState<DashboardMaintenance[]>([]);
@@ -177,15 +181,24 @@ export function AdminDashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-[#001F3F] mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center gap-2 bg-[#001F3F] text-white px-4 py-3 rounded-lg hover:bg-[#003366] transition-colors">
+          <button
+            onClick={() => onNavigate('students')}
+            className="flex items-center justify-center gap-2 bg-[#001F3F] text-white px-4 py-3 rounded-lg hover:bg-[#003366] transition-colors"
+          >
             <Users className="w-5 h-5" />
             <span>Add New Student</span>
           </button>
-          <button className="flex items-center justify-center gap-2 bg-[#FFD700] text-[#001F3F] px-4 py-3 rounded-lg hover:bg-[#FFC700] transition-colors">
+          <button
+            onClick={() => onNavigate('payments')}
+            className="flex items-center justify-center gap-2 bg-[#FFD700] text-[#001F3F] px-4 py-3 rounded-lg hover:bg-[#FFC700] transition-colors"
+          >
             <PhilippinePeso className="w-5 h-5" />
             <span>Record Payment</span>
           </button>
-          <button className="flex items-center justify-center gap-2 bg-[#001F3F] text-white px-4 py-3 rounded-lg hover:bg-[#003366] transition-colors">
+          <button
+            onClick={() => onNavigate('announcements')}
+            className="flex items-center justify-center gap-2 bg-[#001F3F] text-white px-4 py-3 rounded-lg hover:bg-[#003366] transition-colors"
+          >
             <Calendar className="w-5 h-5" />
             <span>Create Announcement</span>
           </button>

@@ -1,11 +1,15 @@
-export type UserRole = 'admin' | 'student' | 'staff';
+export type UserRole = 'admin' | 'manager' | 'super_admin' | 'student' | 'staff';
 
 export interface User {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  middleInitial?: string;
   email: string;
-  role: 'admin' | 'student' | 'staff';
+  role: UserRole;
   studentProfile?: StudentProfile;
+  studentId?: string;
   status?: 'pending' | 'approved' | 'rejected';
 }
 

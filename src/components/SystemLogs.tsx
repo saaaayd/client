@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ShieldCheck, Search, Filter, Calendar } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { ShieldCheck, Search, Filter, Calendar, FileText } from 'lucide-react';
 import { Input } from './ui/input';
 import { usePagination } from '../hooks/usePagination';
 import {
@@ -55,15 +57,51 @@ export function SystemLogs() {
     const handleFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         fetchLogs();
-        fetchLogs();
     }
+
+    const exportLogsPDF = () => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(18);
+        doc.text('DormSync System Logs', 14, 22);
+        doc.setFontSize(11);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+        if (dateRange.start || dateRange.end) {
+            doc.text(`Range: ${dateRange.start || 'Start'} to ${dateRange.end || 'Now'}`, 14, 36);
+        }
+
+        const tableColumn = ["Timestamp", "User", "Action", "Details", "IP"];
+        const tableRows: any[] = [];
+
+        logs.forEach(log => {
+            const rowData = [
+                new Date(log.timestamp).toLocaleString(),
+                `${log.user?.name || 'Unknown'} (${log.user?.role || 'N/A'})`,
+                log.action,
+                typeof log.details === 'string' ? log.details : JSON.stringify(log.details),
+                log.ipAddress
+            ];
+            tableRows.push(rowData);
+        });
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 45,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [0, 31, 63] }
+        });
+
+        doc.save(`dormsync-logs-${new Date().toISOString().split('T')[0]}.pdf`);
+    };
 
     const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(logs, 15);
     const currentLogs = currentData();
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div>
                     <h2 className="text-[#001F3F] text-2xl font-bold flex items-center gap-2">
                         <ShieldCheck className="w-8 h-8" />
@@ -71,6 +109,13 @@ export function SystemLogs() {
                     </h2>
                     <p className="text-gray-500">Track all critical system activities and security events.</p>
                 </div>
+                <button
+                    onClick={exportLogsPDF}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 w-full md:w-auto"
+                >
+                    <FileText className="w-4 h-4" />
+                    Export PDF
+                </button>
             </div>
 
             {/* Filter Bar */}
@@ -88,7 +133,7 @@ export function SystemLogs() {
                             />
                         </div>
                     </div>
-                    <div>
+                    <div className="w-full md:w-auto">
                         <label className="text-xs font-semibold text-gray-500 uppercase">Start Date</label>
                         <Input
                             type="date"
@@ -96,7 +141,7 @@ export function SystemLogs() {
                             onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                         />
                     </div>
-                    <div>
+                    <div className="w-full md:w-auto">
                         <label className="text-xs font-semibold text-gray-500 uppercase">End Date</label>
                         <Input
                             type="date"
@@ -106,14 +151,15 @@ export function SystemLogs() {
                     </div>
                     <button
                         type="submit"
-                        className="bg-[#001F3F] text-white px-4 py-2 rounded-md hover:bg-[#003366] flex items-center gap-2 h-10"
+                        className="bg-[#001F3F] text-white px-4 py-2 rounded-md hover:bg-[#003366] flex items-center justify-center gap-2 h-10 w-full md:w-auto"
                     >
                         <Filter className="w-4 h-4" /> Filter
                     </button>
                 </form>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-100">
+            {/* Desktop Table */}
+            <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden border border-gray-100">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50 text-gray-700 uppercase text-xs border-b">
@@ -164,6 +210,7 @@ export function SystemLogs() {
                     </table>
                 </div>
 
+                {/* Pagination Controls Desktop */}
                 {maxPage > 1 && (
                     <div className="p-4 border-t border-gray-100">
                         <Pagination>
@@ -185,6 +232,66 @@ export function SystemLogs() {
                                         </PaginationLink>
                                     </PaginationItem>
                                 ))}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={(e) => { e.preventDefault(); next(); }}
+                                        className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {currentLogs.length > 0 ? (
+                    currentLogs.map((log) => (
+                        <div key={log._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex flex-col">
+                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider w-fit mb-1 ${log.action.includes('DELETE') ? 'bg-red-100 text-red-700' :
+                                        log.action.includes('UPDATE') ? 'bg-blue-100 text-blue-700' :
+                                            log.action.includes('create') || log.action.includes('REGISTER') ? 'bg-green-100 text-green-700' :
+                                                'bg-gray-100 text-gray-700'
+                                        }`}>
+                                        {log.action}
+                                    </span>
+                                    <span className="text-xs text-gray-400">{new Date(log.timestamp).toLocaleString()}</span>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-medium text-[#001F3F] text-sm">{log.user?.name || 'Unknown'}</div>
+                                    <div className="text-[10px] text-gray-500">{log.user?.role || 'N/A'}</div>
+                                </div>
+                            </div>
+
+                            <div className="mt-2 pt-2 border-t border-gray-50 text-sm text-gray-700">
+                                <p className="mb-1"><span className="text-gray-500 text-xs uppercase">Details:</span> {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</p>
+                                <p className="text-xs text-gray-400 font-mono">IP: {log.ipAddress}</p>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
+                        {loading ? 'Loading logs...' : 'No logs found matching criteria.'}
+                    </div>
+                )}
+
+                {/* Pagination Controls Mobile */}
+                {maxPage > 1 && (
+                    <div className="flex justify-center pt-2">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={(e) => { e.preventDefault(); prev(); }}
+                                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                                <PaginationItem>
+                                    <span className="mx-2 text-sm">{currentPage} / {maxPage}</span>
+                                </PaginationItem>
                                 <PaginationItem>
                                     <PaginationNext
                                         onClick={(e) => { e.preventDefault(); next(); }}

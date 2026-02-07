@@ -34,7 +34,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'payments', label: 'Payments', icon: PhilippinePeso },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'attendance', label: 'Attendance', icon: Clock },
-    { id: 'cleaning', label: 'Cleaning', icon: Calendar },
+    { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'logs', label: 'System Logs', icon: ShieldCheck },
   ];
@@ -44,12 +44,21 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'profile', label: 'My Profile', icon: UserIcon },
     { id: 'payments', label: 'My Payments', icon: PhilippinePeso },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    { id: 'cleaning', label: 'Cleaning', icon: Calendar },
+    { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
   ];
 
-  const menuItems = user?.role === 'admin' ? adminMenuItems : studentMenuItems;
+  const staffMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'rooms', label: 'Rooms', icon: BedDouble },
+    { id: 'students', label: 'Student Management', icon: Users },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
+    { id: 'tasks', label: 'Task', icon: Calendar },
+    { id: 'attendance', label: 'Attendance', icon: Clock },
+  ];
+
+  const menuItems = (user?.role === 'admin' || user?.role === 'manager' || user?.role === 'super_admin') ? adminMenuItems : (user?.role === 'staff' ? staffMenuItems : studentMenuItems);
 
   return (
     <div className="min-h-screen flex">
@@ -136,7 +145,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
             <div className="p-4 border-t border-white/10">
               <div className="px-4 py-2 mb-2">
                 <p className="text-sm text-white/90">{user?.name}</p>
-                <p className="text-xs text-white/60 capitalize">{user?.role}</p>
+                <p className="text-xs text-gray-400 capitalize">{user?.role?.replace('_', ' ')}</p>
               </div>
               <button
                 onClick={logout}
@@ -166,7 +175,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
                 {currentPage.replace('-', ' ')}
               </h2>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
               <span>{new Date().toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',

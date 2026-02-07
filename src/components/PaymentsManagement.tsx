@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { Plus, Trash2, Edit, CopyPlus } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Plus, Trash2, Edit, CopyPlus, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -30,6 +32,7 @@ const emptyPayment = {
   status: 'pending',
   notes: '',
   receiptUrl: '',
+  referenceNumber: '',
 };
 
 export function PaymentsManagement() {
@@ -120,6 +123,7 @@ export function PaymentsManagement() {
         status: payment.status,
         notes: payment.notes || '',
         receiptUrl: payment.receiptUrl || '',
+        referenceNumber: payment.referenceNumber || '',
       });
     } else {
       setEditingId(null);
@@ -149,7 +153,8 @@ export function PaymentsManagement() {
       dueDate: formData.due_date, // Match backend expectation "dueDate"
       status: formData.status,
       notes: formData.notes,
-      receiptUrl: formData.receiptUrl
+      receiptUrl: formData.receiptUrl,
+      referenceNumber: formData.referenceNumber,
     };
 
     try {
@@ -259,6 +264,7 @@ export function PaymentsManagement() {
         ...row,
         student_id: Number(row.student_id),
         amount: Number(row.amount),
+        referenceNumber: (row as any).referenceNumber,
       })),
     };
 
@@ -270,6 +276,44 @@ export function PaymentsManagement() {
     } catch (error) {
       Swal.fire('Error', 'Failed to save bulk payments.', 'error');
     }
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFontSize(18);
+    doc.text('DormSync Payment Report', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+    const tableColumn = ["Student", "Ref #", "Amount", "Type", "Due Date", "Status", "Notes"];
+    const tableRows: any[] = [];
+
+    const dataToExport = payments; // Export all loaded payments, or change to currentPayments for current page only
+
+    dataToExport.forEach(payment => {
+      const paymentData = [
+        payment.student?.name || 'Unknown',
+        payment.referenceNumber || '--',
+        `PHP ${Number(payment.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        payment.type,
+        new Date(payment.dueDate).toLocaleDateString(),
+        payment.status,
+        payment.notes || ''
+      ];
+      tableRows.push(paymentData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 40,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 31, 63] } // Match brand color
+    });
+
+    doc.save(`dormsync-payments-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const summary = {
@@ -284,21 +328,31 @@ export function PaymentsManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-[#001F3F] text-2xl font-bold">Payments</h2>
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-[#001F3F] text-2xl font-bold">Payments</h2>
+          <p className="text-gray-500 text-sm">Manage student payments and financial records.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={exportToPDF}
+            variant="outline"
+            className="border-red-600 text-red-600 hover:bg-red-50 text-xs md:text-sm px-2 md:px-4 flex-1 md:flex-none"
+          >
+            <FileText className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Export
+          </Button>
           <Button
             onClick={openBulkModal}
             variant="outline"
-            className="border-[#001F3F] text-[#001F3F]"
+            className="border-[#001F3F] text-[#001F3F] text-xs md:text-sm px-2 md:px-4 flex-1 md:flex-none"
           >
-            <CopyPlus className="mr-2 h-4 w-4" /> Bulk Add
+            <CopyPlus className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Bulk Add
           </Button>
           <Button
             onClick={() => openModal()}
-            className="bg-[#FFD700] text-[#001F3F] hover:bg-[#e6c200]"
+            className="bg-[#FFD700] text-[#001F3F] hover:bg-[#e6c200] text-xs md:text-sm px-2 md:px-4 flex-1 md:flex-none"
           >
-            <Plus className="mr-2 h-4 w-4" /> Record Payment
+            <Plus className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" /> Record
           </Button>
         </div>
       </div>
@@ -324,11 +378,13 @@ export function PaymentsManagement() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-[#001F3F] text-white">
             <tr>
               <th className="px-6 py-3">Student</th>
+              <th className="px-6 py-3">Ref #</th>
               <th className="px-6 py-3">Amount</th>
               <th className="px-6 py-3">Type</th>
               <th className="px-6 py-3">Due Date</th>
@@ -341,6 +397,7 @@ export function PaymentsManagement() {
             {currentPayments.map((p: any) => (
               <tr key={p.id}>
                 <td className="px-6 py-4">{p.student?.name || 'Unknown'}</td>
+                <td className="px-6 py-4 font-mono text-xs">{p.referenceNumber || '--'}</td>
                 <td className="px-6 py-4">{currencyFormatter.format(Number(p.amount || 0))}</td>
                 <td className="px-6 py-4 capitalize">{p.type}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">
@@ -408,7 +465,7 @@ export function PaymentsManagement() {
           </tbody>
         </table>
 
-        {/* Pagination Controls */}
+        {/* Pagination Controls Desktop */}
         {maxPage > 1 && (
           <div className="p-4 border-t border-gray-100">
             <Pagination>
@@ -430,6 +487,108 @@ export function PaymentsManagement() {
                     </PaginationLink>
                   </PaginationItem>
                 ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={(e) => { e.preventDefault(); next(); }}
+                    className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {currentPayments.map((p: any) => (
+          <div key={p.id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <div className="font-semibold text-[#001F3F]">{p.student?.name || 'Unknown'}</div>
+                <div className="text-xs text-gray-500 mt-1">Ref: {p.referenceNumber || '--'}</div>
+              </div>
+              <span
+                className={`px-2 py-1 rounded text-xs capitalize ${p.status === 'verified'
+                  ? 'bg-green-100 text-green-800'
+                  : p.status === 'paid'
+                    ? 'bg-blue-100 text-blue-800'
+                    : p.status === 'submitted'
+                      ? 'bg-indigo-100 text-indigo-800'
+                      : p.status === 'overdue'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-yellow-100 text-yellow-800'
+                  }`}
+              >
+                {p.status}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xl font-bold text-[#001F3F]">{currencyFormatter.format(Number(p.amount || 0))}</span>
+              <span className="text-sm text-gray-600 capitalize">{p.type}</span>
+            </div>
+
+            <div className="text-sm text-gray-600 mb-3">
+              <span className="text-xs text-gray-500 uppercase tracking-wider">Due Date:</span> {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : '--'}
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+              <div>
+                {p.receiptUrl ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs border-blue-200 text-blue-700 hover:bg-blue-50"
+                    onClick={() => window.open(p.receiptUrl, '_blank')}
+                  >
+                    <FileText className="w-3 h-3 mr-1" /> Receipt
+                  </Button>
+                ) : p.status === 'paid' ? (
+                  <span className="text-xs text-red-500 italic">No receipt</span>
+                ) : (
+                  <span className="text-gray-400 text-xs">--</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setViewingPayment(p);
+                    setIsReceiptModalOpen(true);
+                  }}
+                  className="h-8 w-8 text-blue-600"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 text-red-500 hover:text-red-700"
+                  onClick={() => handleDelete(p._id || p.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {/* Pagination Controls Mobile */}
+        {maxPage > 1 && (
+          <div className="flex justify-center pt-2">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={(e) => { e.preventDefault(); prev(); }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="mx-2 text-sm">{currentPage} / {maxPage}</span>
+                </PaginationItem>
                 <PaginationItem>
                   <PaginationNext
                     onClick={(e) => { e.preventDefault(); next(); }}
@@ -513,6 +672,14 @@ export function PaymentsManagement() {
               </select>
             </div>
             <div>
+              <Label>Reference / Receipt #</Label>
+              <Input
+                value={formData.referenceNumber}
+                onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
+                placeholder="e.g. OR-12345"
+              />
+            </div>
+            <div>
               <Label>Notes</Label>
               <Textarea
                 value={formData.notes}
@@ -575,6 +742,14 @@ export function PaymentsManagement() {
                       step="0.01"
                       value={row.amount}
                       onChange={(e) => updateBulkRow(idx, 'amount', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Reference #</Label>
+                    <Input
+                      value={(row as any).referenceNumber || ''}
+                      onChange={(e) => updateBulkRow(idx, 'referenceNumber', e.target.value)}
+                      placeholder="e.g. OR-12345"
                     />
                   </div>
                 </div>

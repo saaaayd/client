@@ -28,7 +28,11 @@ interface StudentAnnouncement {
   created_at: string;
 }
 
-export function StudentDashboard() {
+interface StudentDashboardProps {
+  onNavigate: (page: string) => void;
+}
+
+export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const { user } = useAuth();
   const [payments, setPayments] = useState<StudentPayment[]>([]);
   const [requests, setRequests] = useState<StudentRequest[]>([]);
@@ -177,7 +181,10 @@ export function StudentDashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-[#001F3F] mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button className="flex items-center justify-center gap-2 bg-[#001F3F] text-white px-4 py-3 rounded-lg hover:bg-[#003366] transition-colors">
+          <button
+            onClick={() => onNavigate('maintenance')}
+            className="flex items-center justify-center gap-2 bg-[#001F3F] text-white px-4 py-3 rounded-lg hover:bg-[#003366] transition-colors"
+          >
             <Wrench className="w-5 h-5" />
             <span>Submit Maintenance Request</span>
           </button>

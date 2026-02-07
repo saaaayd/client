@@ -168,12 +168,12 @@ export function MaintenanceManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h2 className="text-[#001F3F] text-2xl font-bold">Maintenance</h2>
         {user?.role === 'student' && (
           <Button
             onClick={() => openModal()}
-            className="bg-[#001F3F] text-white hover:bg-[#003366]"
+            className="w-full md:w-auto bg-[#001F3F] text-white hover:bg-[#003366]"
           >
             <Plus className="mr-2 h-4 w-4" /> New Request
           </Button>
@@ -200,7 +200,7 @@ export function MaintenanceManagement() {
               </div>
 
               <div className="flex gap-1">
-                {user?.role === 'admin' ? (
+                {(user?.role === 'admin' || user?.role === 'staff') ? (
                   <>
                     {req.status === 'pending' && (
                       <Button
@@ -352,7 +352,7 @@ export function MaintenanceManagement() {
                 <option value="high">High</option>
               </select>
             </div>
-            {user?.role === 'admin' && ( // Only admin can change status from here
+            {(user?.role === 'admin' || user?.role === 'staff') && ( // Only admin/staff can change status from here
               <div>
                 <Label>Status</Label>
                 <select

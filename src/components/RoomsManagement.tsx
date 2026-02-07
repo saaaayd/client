@@ -138,18 +138,19 @@ const RoomsManagement: React.FC = () => {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold text-slate-800">Rooms Management</h1>
                 <button
                     onClick={() => openModal()}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto"
                 >
                     <Plus size={20} />
                     Add Room
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            {/* Desktop Table */}
+            <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4 border-b border-slate-200">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -265,6 +266,105 @@ const RoomsManagement: React.FC = () => {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Search rooms..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                </div>
+
+                {isLoading ? (
+                    <div className="text-center py-8 text-slate-500">Loading...</div>
+                ) : currentRooms.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">No rooms found</div>
+                ) : (
+                    currentRooms.map((room) => (
+                        <div key={room._id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-start mb-3">
+                                <div>
+                                    <h3 className="font-bold text-slate-900 text-lg">Room {room.roomNumber}</h3>
+                                    <p className="text-indigo-600 font-semibold">{currencyFormatter.format(room.price)}</p>
+                                </div>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${room.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
+                                    room.status === 'Occupied' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-amber-100 text-amber-700'
+                                    }`}>
+                                    {room.status}
+                                </span>
+                            </div>
+
+                            <div className="space-y-2 mb-4">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500">Capacity:</span>
+                                    <span className="text-slate-900">{room.capacity} people</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-slate-500">Availability:</span>
+                                    <span className="text-right">
+                                        <span className={`font-bold ${(room.capacity - (room.students_count || 0)) === 0 ? 'text-red-600' : 'text-green-600'
+                                            }`}>
+                                            {Math.max(0, room.capacity - (room.students_count || 0))} slots left
+                                        </span>
+                                        <span className="text-xs text-gray-400 block">
+                                            ({room.students_count || 0} occupied)
+                                        </span>
+                                    </span>
+                                </div>
+                                <div className="text-sm">
+                                    <span className="text-slate-500 block mb-1">Features:</span>
+                                    <p className="text-slate-900">{room.features?.join(', ') || 'None'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                                <button
+                                    onClick={() => openModal(room)}
+                                    className="px-3 py-1.5 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                    <Edit size={16} /> Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(room._id)}
+                                    className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                    <Trash2 size={16} /> Delete
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+                {/* Pagination Controls Mobile */}
+                {maxPage > 1 && (
+                    <div className="flex justify-center pt-2">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={(e) => { e.preventDefault(); prev(); }}
+                                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                                <PaginationItem>
+                                    <span className="mx-2 text-sm">{currentPage} / {maxPage}</span>
+                                </PaginationItem>
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={(e) => { e.preventDefault(); next(); }}
+                                        className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
             </div>
 
             {/* Modal */}

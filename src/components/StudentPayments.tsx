@@ -34,7 +34,19 @@ export function StudentPayments() {
   const [receiptLinks, setReceiptLinks] = useState<Record<string, string>>({});
   const [submittingId, setSubmittingId] = useState<string | null>(null);
 
-  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(payments, 5);
+  const actionablePayments = payments.filter(
+    (p) => p.status === 'pending' || p.status === 'overdue'
+  );
+  const historyPayments = payments
+    .filter((p) => ['paid', 'verified', 'submitted'].includes(p.status))
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+    .slice(0, 1);
+
+  const displayedPayments = [...actionablePayments, ...historyPayments].sort(
+    (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+  );
+
+  const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(displayedPayments, 5);
   const currentPayments = currentData();
 
   useEffect(() => {
@@ -105,7 +117,7 @@ export function StudentPayments() {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-[#001F3F] mb-4">My Payments</h3>
+      <h3 className="text-[#001F3F] mb-4">Recent Payments</h3>
       {payments.length === 0 ? (
         <p className="text-sm text-gray-500">No payment records found.</p>
       ) : (

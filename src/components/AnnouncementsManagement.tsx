@@ -28,7 +28,7 @@ interface AnnouncementDto {
 
 export function AnnouncementsManagement() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'super_admin';
 
   const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -148,12 +148,12 @@ export function AnnouncementsManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h2 className="text-[#001F3F] text-2xl font-bold">Announcements</h2>
         {isAdmin && (
           <Button
             onClick={() => openModal()}
-            className="bg-[#001F3F] text-white hover:bg-[#003366] font-semibold"
+            className="w-full md:w-auto bg-[#001F3F] text-white hover:bg-[#003366] font-semibold flex items-center justify-center gap-2"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create
@@ -167,9 +167,9 @@ export function AnnouncementsManagement() {
             key={a.id}
             className={`bg-white p-4 rounded-lg shadow-sm border-l-4 ${priorityColor(a.priority)} transition-all hover:shadow-md`}
           >
-            <div className="flex justify-between items-start gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="flex-1 w-full">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h3 className="font-bold text-lg text-[#001F3F]">{a.title}</h3>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide ${priorityBadge(
@@ -180,15 +180,15 @@ export function AnnouncementsManagement() {
                   </span>
                 </div>
                 <p className="text-gray-600 whitespace-pre-line text-sm leading-relaxed">{a.content}</p>
-                <div className="mt-3 text-xs text-gray-400 flex items-center gap-1">
+                <div className="mt-3 text-xs text-gray-400 flex flex-wrap items-center gap-1">
                   <span>Posted by: {a.creator?.name || 'System Admin'}</span>
-                  <span>•</span>
-                  <span>{new Date(a.created_at).toLocaleDateString()}</span>
+                  <span className="hidden md:inline">•</span>
+                  <span className="block md:inline w-full md:w-auto">{new Date(a.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
 
               {isAdmin && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 justify-end border-t md:border-t-0 pt-3 md:pt-0 border-gray-100">
                   <Button size="icon" variant="ghost" onClick={() => openModal(a)} className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50">
                     <Edit className="w-4 h-4" />
                   </Button>

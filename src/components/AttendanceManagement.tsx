@@ -181,14 +181,14 @@ export function AttendanceManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h2 className="text-[#001F3F]">Attendance & Curfew Management</h2>
+          <h2 className="text-[#001F3F] text-2xl font-bold">Attendance & Curfew Management</h2>
           <p className="text-gray-600 text-sm mt-1">Track student check-in and check-out logs</p>
         </div>
         <Button
           onClick={() => setIsScannerOpen(true)}
-          className="bg-[#001F3F] text-white hover:bg-[#003366] flex items-center gap-2"
+          className="w-full md:w-auto bg-[#001F3F] text-white hover:bg-[#003366] flex items-center justify-center gap-2"
         >
           <Scan className="w-5 h-5" />
           Scan QR
@@ -218,14 +218,16 @@ export function AttendanceManagement() {
       </Dialog>
 
       {/* Date Selector */}
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-4">
-        <Calendar className="w-5 h-5 text-gray-600" />
-        <label className="text-sm text-gray-700">Select Date:</label>
+      <div className="bg-white rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center gap-4">
+        <label className="text-sm text-gray-700 flex items-center gap-2 font-medium">
+          <Calendar className="w-5 h-5 text-gray-600" />
+          Select Date:
+        </label>
         <input
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+          className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
         />
       </div>
 
@@ -258,10 +260,10 @@ export function AttendanceManagement() {
         </div>
       </div>
 
-      {/* Attendance Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Desktop Attendance Table */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 bg-gray-50 border-b">
-          <h3 className="text-[#001F3F]">
+          <h3 className="text-[#001F3F] font-semibold">
             Attendance Log -{' '}
             {new Date(selectedDate).toLocaleDateString('en-US', {
               weekday: 'long',
@@ -328,7 +330,7 @@ export function AttendanceManagement() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline - flex items - center gap - 1 px - 3 py - 1 rounded text - xs ${log.status === 'present'
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded text-xs ${log.status === 'present'
                           ? 'bg-green-100 text-green-700'
                           : log.status === 'late'
                             ? 'bg-orange-100 text-orange-700'
@@ -351,7 +353,7 @@ export function AttendanceManagement() {
             </tbody>
           </table>
 
-          {/* Pagination Controls */}
+          {/* Pagination Controls Desktop */}
           {maxPage > 1 && (
             <div className="p-4 border-t border-gray-100">
               <Pagination>
@@ -384,6 +386,110 @@ export function AttendanceManagement() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        <h3 className="text-[#001F3F] font-semibold px-1">
+          {new Date(selectedDate).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </h3>
+        {currentLogs.map((log) => {
+          const student = typeof log.student === 'string' ? null : log.student;
+          const name = student?.name || 'Unknown';
+          const initials = name
+            .split(' ')
+            .filter(Boolean)
+            .map((n) => n[0])
+            .join('');
+          const room = student?.studentProfile?.roomNumber || 'N/A';
+
+          return (
+            <div key={log._id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#001F3F] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {initials}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-[#001F3F]">{name}</div>
+                    <div className="text-xs text-gray-500">Room: {room}</div>
+                  </div>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${log.status === 'present'
+                    ? 'bg-green-100 text-green-700'
+                    : log.status === 'late'
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-red-100 text-red-700'
+                    } `}
+                >
+                  {log.status === 'present' ? (
+                    <UserCheck className="w-3 h-3" />
+                  ) : log.status === 'late' ? (
+                    <Clock className="w-3 h-3" />
+                  ) : (
+                    <UserX className="w-3 h-3" />
+                  )}
+                  {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm mt-4 pt-4 border-t border-gray-100">
+                <div>
+                  <span className="text-gray-500 text-xs block mb-1">Check-In</span>
+                  {formatTime(log.timeIn) ? (
+                    <div className="flex items-center gap-1 font-medium text-gray-700">
+                      <Clock className="w-3 h-3 text-green-600" />
+                      {formatTime(log.timeIn)}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-500 text-xs block mb-1">Check-Out</span>
+                  {formatTime(log.timeOut) ? (
+                    <div className="flex items-center gap-1 font-medium text-gray-700">
+                      <Clock className="w-3 h-3 text-red-600" />
+                      {formatTime(log.timeOut)}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {/* Pagination Controls Mobile */}
+        {maxPage > 1 && (
+          <div className="flex justify-center pt-2">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={(e) => { e.preventDefault(); prev(); }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="mx-2 text-sm">{currentPage} / {maxPage}</span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={(e) => { e.preventDefault(); next(); }}
+                    className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
     </div>
   );
