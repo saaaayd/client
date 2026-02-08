@@ -39,7 +39,7 @@ export function MaintenanceManagement() {
   useEffect(() => {
     if (user) {
       fetchRequests();
-      if (user.role === 'admin') {
+      if (user.role === 'admin' || user.role === 'super_admin') {
         fetchStudents();
       }
     }
@@ -200,7 +200,7 @@ export function MaintenanceManagement() {
               </div>
 
               <div className="flex gap-1">
-                {(user?.role === 'admin' || user?.role === 'staff') ? (
+                {(user?.role === 'admin' || user?.role === 'staff' || user?.role === 'super_admin') ? (
                   <>
                     {req.status === 'pending' && (
                       <Button
@@ -291,7 +291,7 @@ export function MaintenanceManagement() {
             <DialogTitle>{editingId ? 'Edit Request' : 'New Request'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
               <>
                 <div>
                   <Label>Student</Label>
@@ -352,7 +352,7 @@ export function MaintenanceManagement() {
                 <option value="high">High</option>
               </select>
             </div>
-            {(user?.role === 'admin' || user?.role === 'staff') && ( // Only admin/staff can change status from here
+            {(user?.role === 'admin' || user?.role === 'staff' || user?.role === 'super_admin') && ( // Only admin/staff can change status from here
               <div>
                 <Label>Status</Label>
                 <select

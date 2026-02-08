@@ -16,6 +16,7 @@ import {
   BedDouble,
   UserCheck
 } from 'lucide-react';
+import Notifications from './Notifications';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -175,13 +176,16 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
                 {currentPage.replace('-', ' ')}
               </h2>
             </div>
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-              <span>{new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}</span>
+            <div className="flex items-center gap-4">
+              <Notifications />
+              <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
+                <span>{new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}</span>
+              </div>
             </div>
           </div>
         </header>

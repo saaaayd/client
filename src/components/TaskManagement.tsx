@@ -53,7 +53,7 @@ export function TaskManagement() {
 
     useEffect(() => {
         fetchTasks();
-        if (user?.role === 'admin') {
+        if (user?.role === 'admin' || user?.role === 'super_admin') {
             fetchRooms();
         }
     }, [user]);
@@ -187,7 +187,7 @@ export function TaskManagement() {
             return;
         }
 
-        if (user?.role === 'admin') {
+        if (user?.role === 'admin' || user?.role === 'super_admin') {
             openModal(event.resource);
         } else {
             // Student view details
