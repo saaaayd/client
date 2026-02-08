@@ -17,12 +17,21 @@ import { AnnouncementsManagement } from './components/AnnouncementsManagement';
 import RoomsManagement from './components/RoomsManagement';
 import { SystemLogs } from './components/SystemLogs';
 import { StudentPayments } from './components/StudentPayments';
+import { CompleteProfile } from './components/CompleteProfile';
+import { PendingValidation } from './components/PendingValidation';
 
 
 function AppContent() {
   const { user, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showLogin, setShowLogin] = useState(false);
+
+  // Reset to dashboard when user logs in
+  useEffect(() => {
+    if (user) {
+      setCurrentPage('dashboard');
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -51,38 +60,25 @@ function AppContent() {
     );
   }
 
+
+
+  // ... (inside AppContent)
+
   // Force redirect if user is rejected (optional, maybe just logout?)
   const userStatus = (user as any).status || (user as any).studentProfile?.status;
 
   if (userStatus === 'rejected') {
-    // For rejected, maybe show Login with error? 
-    // Or just return Login component (which effectively logs them out of view, but state remains?)
-    // Ideally we should logout. 
-    // For now, let's just return Login.
     return <Login />;
   }
 
-  // Pending users technically shouldn't reach here if we block them at Login/AuthContext, 
-  // but if they do, we can just show Login (which will show the pending error if they try to interact or we can force logout)
+  // Pending users logic
   if (userStatus === 'pending') {
-    // If pending, show Login (or maybe show a "Pending Review" screen?)
-    // For now, returning Login is consistent with previous behavior, 
-    // but we might want to ensure they can't just bypass it.
-    // If we return Login, they might see the login form again.
-    // Let's wrapping it in the showLogin logic or just return Login directly.
-    return showLogin ? (
-      <div className="relative">
-        <button
-          onClick={() => setShowLogin(false)}
-          className="absolute top-4 left-4 z-50 text-white hover:underline flex items-center gap-2"
-        >
-          &larr; Back to Home
-        </button>
-        <Login />
-      </div>
-    ) : (
-      <LandingPage onGetStarted={() => setShowLogin(true)} />
-    );
+    // If student ID is missing, they need to complete their profile
+    if (!user.studentId) {
+      return <CompleteProfile />;
+    }
+    // If student ID is present, they are waiting for validation
+    return <PendingValidation />;
   }
 
   const renderPage = () => {

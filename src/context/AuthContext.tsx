@@ -63,9 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const stored = sessionStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      setUser(parsed.user);
-      setToken(parsed.token);
-      axios.defaults.headers.common.Authorization = `Bearer ${parsed.token}`;
+      if (parsed.token) {
+        setUser(parsed.user);
+        setToken(parsed.token);
+        axios.defaults.headers.common.Authorization = `Bearer ${parsed.token}`;
+      } else {
+        sessionStorage.removeItem(STORAGE_KEY);
+        setUser(null);
+        setToken(null);
+      }
     }
     setIsLoading(false);
   }, []);
@@ -95,11 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await axios.post('/api/auth/google', { token: credential });
 
-      // If status is pending, backend returns 201 but we shouldn't set session if no token
-      if (res.data.status === 'pending') {
-        // We can return the response data to the caller to handle redirect
-        return res.data;
-      }
+
 
       setSession(res.data.token, res.data);
       return res.data;

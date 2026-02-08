@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { Search, Plus, Edit, Trash2, UserCheck, UserX, Hash, Phone, Mail, Shield } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, UserCheck, UserX, Hash, Phone, Mail, Shield, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -17,6 +17,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "./ui/pagination";
+import { StudentHistoryModal } from './StudentHistoryModal';
 
 // Reuse existing interfaces or define new ones
 interface Student {
@@ -63,8 +64,9 @@ export function UserManagement() {
     const { user } = useAuth();
     const isAdmin = user?.role === 'admin';
 
-    const [activeUserTab, setActiveUserTab] = useState<'students' | 'employees'>('students');
+    const [activeUserTab, setActiveUserTab] = useState<'students' | 'employees' | 'pending'>('students');
     const [students, setStudents] = useState<Student[]>([]);
+    const [pendingUsers, setPendingUsers] = useState<Student[]>([]); // Using Student interface for pending users
     const [employeeList, setEmployeeList] = useState<Staff[]>([]);
     const [rooms, setRooms] = useState<Room[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -77,6 +79,10 @@ export function UserManagement() {
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    // History Modal State
+    const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
     // Permissions
     const isSuperAdmin = user?.role === 'super_admin';
@@ -136,6 +142,15 @@ export function UserManagement() {
         }
     };
 
+    const fetchPendingUsers = async () => {
+        try {
+            const res = await axios.get('/api/users/pending');
+            setPendingUsers(res.data);
+        } catch (error) {
+            console.error('Error fetching pending users:', error);
+        }
+    };
+
     const fetchRooms = async () => {
         try {
             const res = await axios.get('/api/rooms');
@@ -144,6 +159,17 @@ export function UserManagement() {
             console.error('Error fetching rooms:', err);
         }
     };
+
+    useEffect(() => {
+        if (activeUserTab === 'students') {
+            fetchStudents();
+            fetchRooms();
+        } else if (activeUserTab === 'employees') {
+            fetchEmployees();
+        } else if (activeUserTab === 'pending') {
+            fetchPendingUsers();
+        }
+    }, [activeUserTab]);
 
     // --- Student Actions ---
 
@@ -202,10 +228,10 @@ export function UserManagement() {
         }
     };
 
-    const handleDeleteStudent = async (id: string) => {
+    const handleDeleteUser = async (id: string, type: 'student' | 'employee') => {
         const result = await Swal.fire({
             title: 'Are you sure?',
-            text: "This will remove the student account permanently.",
+            text: `This will remove the ${type} account permanently.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -214,15 +240,61 @@ export function UserManagement() {
 
         if (result.isConfirmed) {
             try {
-                await axios.delete(`/api/students/${id}`);
-                Swal.fire('Deleted!', 'Student has been removed.', 'success');
-                fetchStudents();
-                fetchRooms();
-            } catch (error) {
-                Swal.fire('Error', 'Failed to delete student.', 'error');
+                if (type === 'student') {
+                    await axios.delete(`/api/students/${id}`);
+                } else {
+                    await axios.delete(`/api/users/${id}`);
+                }
+                Swal.fire('Deleted!', `${type === 'student' ? 'Student' : 'Employee'} has been removed.`, 'success');
+                if (type === 'student') {
+                    fetchStudents();
+                    fetchRooms();
+                } else {
+                    fetchEmployees();
+                }
+            } catch (error: any) {
+                Swal.fire('Error', error.response?.data?.message || `Failed to delete ${type}.`, 'error');
             }
         }
     };
+
+    const openHistoryModal = (id: string) => {
+        setHistoryStudentId(id);
+        setIsHistoryModalOpen(true);
+    };
+
+    const handleApproveUser = async (id: string) => {
+        try {
+            await axios.put(`/api/users/${id}/approve`);
+            Swal.fire('Approved', 'User approval successful.', 'success');
+            fetchPendingUsers();
+        } catch (error: any) {
+            Swal.fire('Error', error.response?.data?.message || 'Failed to approve user.', 'error');
+        }
+    };
+
+    const handleRejectUser = async (id: string) => {
+        const result = await Swal.fire({
+            title: 'Reject User?',
+            text: 'This will reject the user registration.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Yes, reject'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await axios.put(`/api/users/${id}/reject`);
+                Swal.fire('Rejected', 'User has been rejected.', 'success');
+                fetchPendingUsers();
+            } catch (error: any) {
+                Swal.fire('Error', error.response?.data?.message || 'Failed to reject user.', 'error');
+            }
+        }
+    };
+
+
 
 
     // --- Staff/Employee Actions ---
@@ -277,15 +349,17 @@ export function UserManagement() {
     // --- Filtering & Pagination ---
 
     // We filter based on the active tab's data
-    const dataToFilter = activeUserTab === 'students' ? students : employeeList;
+    const dataToFilter = activeUserTab === 'students' ? students :
+        activeUserTab === 'employees' ? employeeList : pendingUsers;
 
     const filtered = (dataToFilter as any[]).filter((item) => {
         const term = searchTerm.toLowerCase();
-        if (activeUserTab === 'students') {
+        if (activeUserTab === 'students' || activeUserTab === 'pending') {
             const s = item as Student;
             return s.name.toLowerCase().includes(term) ||
-                s.studentProfile?.roomNumber?.includes(term) ||
-                (s.studentId || s.student_id)?.toLowerCase().includes(term);
+                s.studentProfile?.roomNumber?.toLowerCase().includes(term) ||
+                (s.studentId || s.student_id)?.toLowerCase().includes(term) ||
+                s.email.toLowerCase().includes(term);
         } else {
             const s = item as Staff;
             return s.name.toLowerCase().includes(term) ||
@@ -330,6 +404,12 @@ export function UserManagement() {
                         All Employees
                     </button>
                 )}
+                <button
+                    onClick={() => { setActiveUserTab('pending'); setSearchTerm(''); }}
+                    className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${activeUserTab === 'pending' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    Pending Validation
+                </button>
             </div>
 
             {/* Search */}
@@ -410,16 +490,21 @@ export function UserManagement() {
                             {canManageEmployees && (
                                 <div className="flex justify-end gap-2 border-t pt-3 mt-2">
                                     {activeUserTab === 'students' && (
-                                        <Button variant="ghost" size="sm" onClick={() => openStudentModal(item)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8">
-                                            <Edit className="w-4 h-4 mr-1" /> Edit
-                                        </Button>
+                                        <>
+                                            <Button variant="ghost" size="sm" onClick={() => openHistoryModal(item._id)} className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8">
+                                                <FileText className="w-4 h-4 mr-1" /> History
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => openStudentModal(item)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8">
+                                                <Edit className="w-4 h-4 mr-1" /> Edit
+                                            </Button>
+                                        </>
                                     )}
                                     {activeUserTab === 'employees' && isSuperAdmin && (
                                         <Button variant="ghost" size="sm" onClick={() => openRoleModal(item)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
                                             <Edit className="w-4 h-4 mr-1" /> Role
                                         </Button>
                                     )}
-                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteStudent(item._id)} className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8">
+                                    <Button variant="ghost" size="sm" onClick={() => handleDeleteUser(item._id, activeUserTab === 'students' ? 'student' : 'employee')} className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8">
                                         <Trash2 className="w-4 h-4 mr-1" /> Delete
                                     </Button>
                                 </div>
@@ -467,7 +552,7 @@ export function UserManagement() {
                         <tr>
                             <th className="px-6 py-4 font-semibold tracking-wider">Name</th>
                             <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Room' : 'Email'}</th>
-                            <th className="px-6 py-4 font-semibold tracking-wider">Role</th>
+                            <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Contact' : 'Role'}</th>
                             <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
                             {canManageEmployees && <th className="px-6 py-4 text-right font-semibold tracking-wider">Actions</th>}
                         </tr>
@@ -522,6 +607,10 @@ export function UserManagement() {
                                                 {item.studentProfile?.status === 'active' ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
                                                 {item.studentProfile?.status === 'active' ? 'Active' : 'Unverified/Inactive'}
                                             </span>
+                                        ) : activeUserTab === 'pending' ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                                <UserX className="w-3 h-3" /> Pending
+                                            </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                                                 <UserCheck className="w-3 h-3" /> Active
@@ -531,16 +620,31 @@ export function UserManagement() {
                                     {canManageEmployees && (
                                         <td className="px-6 py-4 text-right flex justify-end gap-1">
                                             {activeUserTab === 'students' && (
-                                                <Button variant="ghost" size="icon" onClick={() => openStudentModal(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
+                                                <>
+                                                    <Button variant="ghost" size="icon" onClick={() => openHistoryModal(item._id)} className="h-8 w-8 text-teal-600 hover:bg-teal-50" title="View History">
+                                                        <FileText className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => openStudentModal(item)} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {activeUserTab === 'pending' && (
+                                                <>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleApproveUser(item._id)} className="h-8 w-8 text-green-600 hover:bg-green-50" title="Approve">
+                                                        <UserCheck className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleRejectUser(item._id)} className="h-8 w-8 text-red-600 hover:bg-red-50" title="Reject">
+                                                        <UserX className="w-4 h-4" />
+                                                    </Button>
+                                                </>
                                             )}
                                             {activeUserTab === 'employees' && isSuperAdmin && (
                                                 <Button variant="ghost" size="icon" onClick={() => openRoleModal(item)} className="h-8 w-8 text-indigo-600 hover:bg-indigo-50">
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
                                             )}
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteStudent(item._id)} className="h-8 w-8 text-red-500 hover:bg-red-50">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(item._id, activeUserTab === 'students' ? 'student' : 'employee')} className="h-8 w-8 text-red-500 hover:bg-red-50">
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </td>
@@ -730,6 +834,12 @@ export function UserManagement() {
                     </DialogContent>
                 </Dialog>
             )}
+
+            <StudentHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                studentId={historyStudentId}
+            />
         </div>
     );
 }
