@@ -223,7 +223,7 @@ export function TaskManagement() {
                     <h2 className="text-[#001F3F] text-2xl font-bold">Task Management</h2>
                     <p className="text-gray-600">Sanitation, Maintenance, and Inspections</p>
                 </div>
-                {user?.role === 'admin' && (
+                {(user?.role === 'admin' || user?.role === 'staff' || user?.role === 'super_admin') && (
                     <Button onClick={() => openModal()} className="w-full md:w-auto bg-[#001F3F] text-white">
                         <Plus className="w-4 h-4 mr-2" /> Add Task
                     </Button>
