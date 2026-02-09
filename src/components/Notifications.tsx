@@ -20,15 +20,7 @@ export default function Notifications() {
 
     const fetchNotifications = async () => {
         try {
-            // Manual token header if not set globally, but usually it is. 
-            // Assuming global axios interceptor or similar, relying on AuthContext setup.
-            // If not, we might need configuration.
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}` // Fallback
-                }
-            };
-            const { data } = await axios.get('/api/notifications', config);
+            const { data } = await axios.get('/api/notifications');
             setNotifications(data);
             setUnreadCount(data.filter((n: Notification) => !n.read).length);
         } catch (error) {
@@ -47,12 +39,7 @@ export default function Notifications() {
 
     const markAsRead = async (id: string) => {
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-            };
-            await axios.put(`/api/notifications/${id}/read`, {}, config);
+            await axios.put(`/api/notifications/${id}/read`);
             setNotifications(notifications.map(n => n._id === id ? { ...n, read: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (error) {
@@ -62,12 +49,7 @@ export default function Notifications() {
 
     const markAllRead = async () => {
         try {
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-            };
-            await axios.put('/api/notifications/read-all', {}, config);
+            await axios.put('/api/notifications/read-all');
             setNotifications(notifications.map(n => ({ ...n, read: true })));
             setUnreadCount(0);
         } catch (error) {
