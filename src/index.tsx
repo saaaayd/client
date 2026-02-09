@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import App from './App';
 import './styles/globals.css';
+import setupAxiosInterceptors from './utils/axiosConfig';
+
+setupAxiosInterceptors();
 
 const rootElement = document.getElementById('root');
 

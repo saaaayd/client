@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -377,7 +378,9 @@ function StudentProfile() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

@@ -377,7 +377,7 @@ export function UserManagement() {
                 <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
 
                 {/* Add Button based on Tab */}
-                {canManageEmployees && (
+                {canManageEmployees && activeUserTab !== 'pending' && (
                     <Button
                         onClick={() => activeUserTab === 'students' ? openStudentModal() : openStaffModal()}
                         className="bg-[#001F3F] text-white hover:bg-[#003366] gap-2"
@@ -462,20 +462,22 @@ export function UserManagement() {
                                 )}
                             </div>
 
-                            <div className="flex justify-between items-center text-sm text-gray-600 mb-3">
-                                {activeUserTab === 'students' ? (
-                                    <span className="font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
-                                        Room: {item.studentProfile?.roomNumber || 'N/A'}
-                                    </span>
-                                ) : (
-                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
-                                        item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                            'bg-blue-100 text-blue-700'
-                                        }`}>
-                                        <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
-                                    </span>
-                                )}
-                            </div>
+                            {activeUserTab !== 'pending' && (
+                                <div className="flex justify-between items-center text-sm text-gray-600 mb-3">
+                                    {activeUserTab === 'students' ? (
+                                        <span className="font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                                            Room: {item.studentProfile?.roomNumber || 'N/A'}
+                                        </span>
+                                    ) : (
+                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
+                                            item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                                'bg-blue-100 text-blue-700'
+                                            }`}>
+                                            <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
 
                             {activeUserTab === 'students' && (
                                 <div className="text-sm text-gray-600 mb-3">
@@ -552,7 +554,7 @@ export function UserManagement() {
                         <tr>
                             <th className="px-6 py-4 font-semibold tracking-wider">Name</th>
                             <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Room' : 'Email'}</th>
-                            <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Contact' : 'Role'}</th>
+                            {activeUserTab !== 'pending' && <th className="px-6 py-4 font-semibold tracking-wider">{activeUserTab === 'students' ? 'Contact' : 'Role'}</th>}
                             <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
                             {canManageEmployees && <th className="px-6 py-4 text-right font-semibold tracking-wider">Actions</th>}
                         </tr>
@@ -582,22 +584,24 @@ export function UserManagement() {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 text-gray-600">
-                                        {activeUserTab === 'students' ? (
-                                            item.studentProfile?.phoneNumber ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Phone className="w-3 h-3" /> {item.studentProfile.phoneNumber}
-                                                </div>
-                                            ) : <span className="text-xs text-gray-400 italic">Not set</span>
-                                        ) : (
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
-                                                item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
-                                            </span>
-                                        )}
-                                    </td>
+                                    {activeUserTab !== 'pending' && (
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {activeUserTab === 'students' ? (
+                                                item.studentProfile?.phoneNumber ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Phone className="w-3 h-3" /> {item.studentProfile.phoneNumber}
+                                                    </div>
+                                                ) : <span className="text-xs text-gray-400 italic">Not set</span>
+                                            ) : (
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
+                                                    item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                                        'bg-blue-100 text-blue-700'
+                                                    }`}>
+                                                    <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
+                                                </span>
+                                            )}
+                                        </td>
+                                    )}
                                     <td className="px-6 py-4">
                                         {activeUserTab === 'students' ? (
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${item.studentProfile?.status === 'active'
