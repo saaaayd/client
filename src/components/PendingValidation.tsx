@@ -19,7 +19,7 @@ export function PendingValidation() {
                         Account Pending
                     </h2>
                     <p className="mt-4 text-lg text-gray-500">
-                        Please wait for a while your account is being validated by the admin.
+                        This account will be validated by the admin please standby and check your email to notify you
                     </p>
                 </div>
 

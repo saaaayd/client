@@ -136,11 +136,14 @@ export function Login() {
         }),
       });
       const data = await res.json();
+      console.log('Verify OTP Response:', data);
       if (!res.ok) throw new Error(data.message || 'Verification failed');
 
       if (data.token) {
+        console.log('Token received, setting session...');
         setSessionFromOauth(data.token, data);
       } else {
+        console.log('No token received, switching to login mode.');
         setSuccess('Verification successful. Please login.');
         setMode('login');
       }

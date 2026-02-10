@@ -72,8 +72,8 @@ function AppContent() {
     return <Login />;
   }
 
-  // Pending users logic
-  if (userStatus === 'pending') {
+  // Pending/Unverified users logic
+  if (userStatus === 'pending' || userStatus === 'unverified') {
     // If student ID is missing, they need to complete their profile
     if (!user.studentId) {
       return <CompleteProfile />;
