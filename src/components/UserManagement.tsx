@@ -62,7 +62,7 @@ interface Room {
 
 export function UserManagement() {
     const { user } = useAuth();
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     const [activeUserTab, setActiveUserTab] = useState<'students' | 'employees' | 'pending'>('students');
     const [students, setStudents] = useState<Student[]>([]);

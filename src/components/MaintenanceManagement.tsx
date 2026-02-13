@@ -102,7 +102,7 @@ export function MaintenanceManagement() {
   };
 
   const handleSubmit = async () => {
-    if ((user?.role === 'admin' && !formData.student_id) || !formData.title || !formData.description) {
+    if (((user?.role === 'admin' || user?.role === 'super_admin') && !formData.student_id) || !formData.title || !formData.description) {
       Swal.fire('Missing fields', 'Title and description are required.', 'warning');
       return;
     }
@@ -134,9 +134,9 @@ export function MaintenanceManagement() {
       await axios.patch(`/api/maintenance/${id}/status`, { status });
       Swal.fire('Updated', `Request marked as ${status}.`, 'success');
       fetchRequests();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      Swal.fire('Error', 'Failed to update status.', 'error');
+      Swal.fire('Error', error.response?.data?.message || 'Failed to update status.', 'error');
     }
   };
 
