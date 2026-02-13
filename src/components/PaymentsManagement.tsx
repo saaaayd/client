@@ -603,7 +603,7 @@ export function PaymentsManagement() {
 
       {/* Single payment modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent id="payment-modal-content" className="bg-white z-[100] border-2 border-gray-200 shadow-xl">
+        <DialogContent id="payment-modal-content" className="bg-white z-[100] border-2 border-gray-200 shadow-xl w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Payment' : 'New Payment'}</DialogTitle>
             <DialogDescription>
@@ -805,7 +805,7 @@ export function PaymentsManagement() {
           </div>
 
           <DialogFooter>
-            <Button onClick={handleBulkSubmit} className="bg-[#001F3F]">
+            <Button onClick={handleBulkSubmit} className="bg-[#001F3F] text-white hover:bg-[#003366]">
               Save Bulk Payments
             </Button>
           </DialogFooter>

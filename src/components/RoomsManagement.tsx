@@ -12,6 +12,8 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "./ui/pagination";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
 
 const RoomsManagement: React.FC = () => {
     const [rooms, setRooms] = useState<Room[]>([]);
@@ -140,13 +142,13 @@ const RoomsManagement: React.FC = () => {
         <div className="p-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold text-slate-800">Rooms Management</h1>
-                <button
+                <Button
                     onClick={() => openModal()}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto"
+                    className="bg-[#001F3F] hover:bg-[#003366] text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto"
                 >
                     <Plus size={20} />
                     Add Room
-                </button>
+                </Button>
             </div>
 
             {/* Desktop Table */}
@@ -367,105 +369,98 @@ const RoomsManagement: React.FC = () => {
                 )}
             </div>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                            <h2 className="text-xl font-bold text-slate-800">
-                                {isEditing ? 'Edit Room' : 'Add New Room'}
-                            </h2>
-                            <button onClick={closeModal} className="text-slate-400 hover:text-slate-600">
-                                <X size={24} />
-                            </button>
-                        </div>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{isEditing ? 'Edit Room' : 'Add New Room'}</DialogTitle>
+                    </DialogHeader>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Room Number</label>
-                                    <input
-                                        type="text"
-                                        value={currentRoom.roomNumber || ''}
-                                        onChange={(e) => setCurrentRoom({ ...currentRoom, roomNumber: e.target.value })}
-                                        required
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={currentRoom.capacity || ''}
-                                        onChange={(e) => setCurrentRoom({ ...currentRoom, capacity: parseInt(e.target.value) })}
-                                        required
-                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    />
-                                </div>
-                            </div>
-
+                    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Price</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Room Number</label>
                                 <input
-                                    type="number"
-                                    min="0"
-                                    value={currentRoom.price || ''}
-                                    onChange={(e) => setCurrentRoom({ ...currentRoom, price: parseFloat(e.target.value) })}
+                                    type="text"
+                                    value={currentRoom.roomNumber || ''}
+                                    onChange={(e) => setCurrentRoom({ ...currentRoom, roomNumber: e.target.value })}
                                     required
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                                <select
-                                    value={currentRoom.status || 'Available'}
-                                    onChange={(e) => setCurrentRoom({ ...currentRoom, status: e.target.value as any })}
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Capacity</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={currentRoom.capacity || ''}
+                                    onChange={(e) => setCurrentRoom({ ...currentRoom, capacity: parseInt(e.target.value) })}
+                                    required
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="Available">Available</option>
-                                    <option value="Occupied">Occupied</option>
-                                    <option value="Maintenance">Maintenance</option>
-                                </select>
+                                />
                             </div>
+                        </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Features</label>
-                                <div className="space-y-2">
-                                    {['Air Conditioning', 'Private Bathroom', 'Balcony', 'Study Desk', 'Wi-Fi'].map((feature) => (
-                                        <label key={feature} className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={currentRoom.features?.includes(feature) || false}
-                                                onChange={() => handleFeatureChange(feature)}
-                                                className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
-                                            />
-                                            <span className="text-slate-600">{feature}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Price</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={currentRoom.price || ''}
+                                onChange={(e) => setCurrentRoom({ ...currentRoom, price: parseFloat(e.target.value) })}
+                                required
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                                >
-                                    {isEditing ? 'Save Changes' : 'Create Room'}
-                                </button>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <select
+                                value={currentRoom.status || 'Available'}
+                                onChange={(e) => setCurrentRoom({ ...currentRoom, status: e.target.value as any })}
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="Available">Available</option>
+                                <option value="Occupied">Occupied</option>
+                                <option value="Maintenance">Maintenance</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Features</label>
+                            <div className="space-y-2">
+                                {['Air Conditioning', 'Private Bathroom', 'Balcony', 'Study Desk', 'Wi-Fi'].map((feature) => (
+                                    <label key={feature} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={currentRoom.features?.includes(feature) || false}
+                                            onChange={() => handleFeatureChange(feature)}
+                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                                        />
+                                        <span className="text-slate-600">{feature}</span>
+                                    </label>
+                                ))}
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={closeModal}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                className="flex-1 bg-[#001F3F] hover:bg-[#003366] text-white"
+                            >
+                                {isEditing ? 'Save Changes' : 'Create Room'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
