@@ -370,7 +370,7 @@ const RoomsManagement: React.FC = () => {
             </div>
 
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
+                <DialogContent className="bg-white z-[100] border-2 border-gray-200 shadow-xl w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{isEditing ? 'Edit Room' : 'Add New Room'}</DialogTitle>
                     </DialogHeader>
