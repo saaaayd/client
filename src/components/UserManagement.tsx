@@ -201,14 +201,18 @@ export function UserManagement() {
     };
 
     const handleStudentSubmit = async () => {
-        if (!studentFormData.first_name || !studentFormData.last_name || !studentFormData.student_id) {
-            Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill in Student ID, First Name, and Last Name.' });
+        if (!studentFormData.first_name || !studentFormData.last_name) {
+            Swal.fire({ icon: 'warning', title: 'Missing Fields', text: 'Please fill in First Name and Last Name.' });
             return;
         }
 
         setLoading(true);
         try {
-            const payload = { ...studentFormData, middle_initial: studentFormData.middle_initial || undefined };
+            const payload = {
+                ...studentFormData,
+                middle_initial: studentFormData.middle_initial || undefined,
+                student_id: studentFormData.student_id || undefined
+            };
 
             if (editingId) {
                 await axios.put(`/api/students/${editingId}`, payload);
