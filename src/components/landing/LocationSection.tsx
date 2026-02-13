@@ -2,7 +2,7 @@ import { MapPin, Navigation } from 'lucide-react';
 
 export function LocationSection() {
     return (
-        <section id="location" className="py-24 bg-white">
+        <section id="location" className="py-24 bg-gray-50">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
                 <div className="grid gap-12 lg:grid-cols-2 items-center">
                     {/* Left - Content */}

@@ -14,8 +14,8 @@ export function Header({ onGetStarted }: { onGetStarted: () => void }) {
 
     return (
         <header className="absolute top-0 left-0 right-0 z-50">
-            <div className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
-                <nav className="flex items-center justify-between">
+            <div className="w-full px-6 py-6 lg:px-8">
+                <nav className="flex items-center justify-between relative">
                     {/* Logo */}
                     <div className="flex items-center gap-2 relative z-50">
                         <div className="w-10 h-10 bg-[#FFD700] rounded-lg flex items-center justify-center">
@@ -25,27 +25,19 @@ export function Header({ onGetStarted }: { onGetStarted: () => void }) {
                     </div>
 
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center gap-8">
+                    <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
                         <a href="#features" className="text-white/90 hover:text-white transition-colors font-medium">
                             Features
                         </a>
-                        <a href="#location" className="text-white/90 hover:text-white transition-colors font-medium">
-                            Location
+                        <a href="#about" className="text-white/90 hover:text-white transition-colors font-medium">
+                            About
                         </a>
                         <a href="#contact" className="text-white/90 hover:text-white transition-colors font-medium">
                             Contact
                         </a>
                     </div>
 
-                    {/* CTA Buttons - Desktop */}
-                    <div className="hidden md:flex items-center gap-3">
-                        <button onClick={onGetStarted} className="px-4 py-2 text-white hover:text-white hover:bg-white/10 rounded-md font-medium transition-colors">
-                            Sign In
-                        </button>
-                        <button onClick={onGetStarted} className="px-4 py-2 bg-[#FFD700] text-[#001F3F] hover:bg-[#FFD700]/90 rounded-md font-medium transition-colors">
-                            Get Started
-                        </button>
-                    </div>
+
 
                     {/* Mobile Menu Button */}
                     <button
@@ -71,11 +63,11 @@ export function Header({ onGetStarted }: { onGetStarted: () => void }) {
                                 Features
                             </a>
                             <a
-                                href="#location"
+                                href="#about"
                                 className="text-2xl text-white font-medium hover:text-[#FFD700] transition-colors"
                                 onClick={handleMobileLinkClick}
                             >
-                                Location
+                                About
                             </a>
                             <a
                                 href="#contact"
@@ -85,24 +77,7 @@ export function Header({ onGetStarted }: { onGetStarted: () => void }) {
                                 Contact
                             </a>
                             <div className="flex flex-col gap-4 mt-8 w-64">
-                                <button
-                                    onClick={() => {
-                                        handleMobileLinkClick();
-                                        onGetStarted();
-                                    }}
-                                    className="w-full px-6 py-3 text-white border border-white/20 hover:bg-white/10 rounded-lg font-medium transition-colors text-lg"
-                                >
-                                    Sign In
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        handleMobileLinkClick();
-                                        onGetStarted();
-                                    }}
-                                    className="w-full px-6 py-3 bg-[#FFD700] text-[#001F3F] hover:bg-[#FFD700]/90 rounded-lg font-medium transition-colors text-lg"
-                                >
-                                    Get Started
-                                </button>
+                                {/* Mobile buttons removed as per request */}
                             </div>
                         </div>
                     )}
