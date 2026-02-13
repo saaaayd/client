@@ -141,7 +141,7 @@ const RoomsManagement: React.FC = () => {
     return (
         <div className="p-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-                <h1 className="text-2xl font-bold text-slate-800">Rooms Management</h1>
+                <h1 className="text-2xl font-bold text-slate-800">Room Management</h1>
                 <Button
                     onClick={() => openModal()}
                     className="bg-[#001F3F] hover:bg-[#003366] text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors w-full md:w-auto"

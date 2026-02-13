@@ -36,12 +36,23 @@ interface StudentOption {
 export function AttendanceManagement() {
   const { user } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceLogDto[]>([]);
+  const [totalStudents, setTotalStudents] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   useEffect(() => {
     fetchAttendance(selectedDate);
+    fetchTotalStudents();
   }, [selectedDate]);
+
+  const fetchTotalStudents = async () => {
+    try {
+      const res = await axios.get('/api/students');
+      setTotalStudents(res.data.length);
+    } catch (error) {
+      console.error('Error fetching students', error);
+    }
+  };
 
   const fetchAttendance = async (date: string) => {
     try {
@@ -235,7 +246,7 @@ export function AttendanceManagement() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#001F3F]">
           <p className="text-sm text-gray-600 mb-1">Total Students</p>
-          <p className="text-2xl text-[#001F3F]">{filteredAttendance.length}</p>
+          <p className="text-2xl text-[#001F3F]">{totalStudents}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
           <div className="flex items-center justify-between mb-1">

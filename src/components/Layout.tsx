@@ -30,8 +30,8 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
 
   const adminMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'rooms', label: 'Rooms', icon: BedDouble },
-    { id: 'students', label: 'Student & Staff Management', icon: Users },
+    { id: 'rooms', label: 'Room', icon: BedDouble },
+    { id: 'students', label: 'User', icon: Users },
     { id: 'payments', label: 'Payments', icon: PhilippinePeso },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'attendance', label: 'Attendance', icon: Clock },
@@ -52,8 +52,8 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
 
   const staffMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'rooms', label: 'Rooms', icon: BedDouble },
-    { id: 'students', label: 'Student Management', icon: Users },
+    { id: 'rooms', label: 'Room', icon: BedDouble },
+    { id: 'students', label: 'User', icon: Users },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'attendance', label: 'Attendance', icon: Clock },
@@ -173,7 +173,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
                 <Menu className="w-6 h-6" />
               </button>
               <h2 className="text-[#001F3F] capitalize">
-                {currentPage.replace('-', ' ')}
+                {menuItems.find(item => item.id === currentPage)?.label || currentPage.replace('-', ' ')}
               </h2>
             </div>
             <div className="flex items-center gap-4">

@@ -14,7 +14,7 @@ interface DashboardAnnouncement {
   title: string;
   content: string;
   priority: 'normal' | 'important' | 'urgent';
-  created_at: string;
+  createdAt: string;
 }
 
 interface DashboardMaintenance {
@@ -24,7 +24,7 @@ interface DashboardMaintenance {
   urgency: 'low' | 'medium' | 'high';
   status: string;
   roomNumber?: string;
-  created_at: string;
+  createdAt: string;
   student?: {
     name: string;
     studentProfile?: {
@@ -92,7 +92,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             </div>
           </div>
           <p className="text-3xl mb-1">{stats?.pendingCleaning ?? (loading ? '—' : 0)}</p>
-          <p className="text-sm text-gray-600">Cleaning Tasks</p>
+          <p className="text-sm text-gray-600">Tasks</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
@@ -130,7 +130,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 </div>
                 <p className="text-sm text-gray-600 mt-1 line-clamp-2">{announcement.content}</p>
                 <p className="text-xs text-gray-500 mt-2">
-                  {new Date(announcement.created_at).toLocaleDateString()}
+                  {new Date(announcement.createdAt).toLocaleDateString()}
                 </p>
               </div>
             ))}
@@ -162,7 +162,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                       {request.status.replace('-', ' ')}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {new Date(request.created_at).toLocaleDateString()}
+                      {new Date(request.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
