@@ -64,19 +64,37 @@ export function AttendanceManagement() {
     }
   };
 
+  const getStatusBasedOnTime = (date: Date): 'present' | 'late' => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+
+    const ninePM = 21 * 60; // 9:00 PM
+
+    if (timeInMinutes < ninePM) {
+      return 'present';
+    } else {
+      return 'late';
+    }
+  };
+
   const recordAttendance = async (studentId: string, date: string, type: 'check_in' | 'check_out', logId?: string) => {
     try {
+      const now = new Date();
+      const status = type === 'check_in' ? getStatusBasedOnTime(now) : 'present'; // Default to present/late logic
+
       // Backend expects 'student', 'date', 'timeIn', 'timeOut'
       const payload: any = {
         student: studentId,
         date: date,
-        status: 'present',
       };
 
       if (type === 'check_in') {
-        payload.timeIn = new Date();
+        payload.timeIn = now;
+        payload.status = status;
       } else {
-        payload.timeOut = new Date();
+        payload.timeOut = now;
+        // Do not update status on check-out, preserve original check-in status
       }
 
       if (logId) {
@@ -114,11 +132,6 @@ export function AttendanceManagement() {
 
       let type: 'check_in' | 'check_out' = 'check_in';
 
-      // Logic: If no log OR (has timeIn but NO timeOut), then check_out?
-      // Wait, if no log -> Check In.
-      // If log with timeIn and NO timeOut -> Check Out.
-      // If log with timeIn AND timeOut -> Already done.
-
       if (existingLog) {
         if (existingLog.timeIn && !existingLog.timeOut) {
           type = 'check_out';
@@ -129,9 +142,12 @@ export function AttendanceManagement() {
       }
 
       await recordAttendance(studentId, today, type, existingLog?._id);
+
+      const status = type === 'check_in' ? getStatusBasedOnTime(new Date()) : (existingLog?.status || 'present');
+
       Swal.fire(
         'Success',
-        `${type === 'check_in' ? 'Check-In' : 'Check-Out'} recorded for ${studentName}`,
+        `${type === 'check_in' ? `Check-In Recorded (${status.toUpperCase()})` : 'Check-Out Recorded'} for ${studentName}`,
         'success'
       );
 
@@ -152,7 +168,34 @@ export function AttendanceManagement() {
   const filteredAttendance = attendance;
   const presentCount = filteredAttendance.filter(a => a.status === 'present').length;
   const lateCount = filteredAttendance.filter(a => a.status === 'late').length;
-  const absentCount = filteredAttendance.filter(a => a.status === 'absent').length;
+
+  // Calculate Absent: 
+  // 1. Explicitly marked 'absent' in logs (manual override or past logic)
+  // 2. PLUS students who haven't checked in by 11:59 PM
+  const explicitAbsentCount = filteredAttendance.filter(a => a.status === 'absent').length;
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+  const currentTime = new Date();
+
+  // Absent only counts if day is effectively over (passed 11:59 PM for today)
+  // Since we can't check 'passed 11:59PM' for *today* while it is *today* (it would be tomorrow),
+  // we count absent for today only if the time is essentially end of day? 
+  // Or maybe the user implies checking *at* 11:59.
+  // Let's strictly follow: "when the student did not apear in 11:59 the student should be absent"
+  // This implies we can only definitively say they are absent once 11:59 PM has passed.
+  const isEndOfDay = currentTime.getHours() === 23 && currentTime.getMinutes() >= 59;
+
+  // If viewing past dates, any missing log is absent.
+  // For today, only count as absent if it's 11:59 PM or later.
+  const isPastDate = new Date(selectedDate) < new Date(new Date().setHours(0, 0, 0, 0));
+
+  const missingLogsVal = totalStudents - filteredAttendance.length;
+
+  const unaccountedAbsent = (isPastDate || (isToday && isEndOfDay))
+    ? Math.max(0, missingLogsVal)
+    : 0;
+
+  const absentCount = explicitAbsentCount + unaccountedAbsent;
 
   const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(filteredAttendance, 10);
   const currentLogs = currentData();
