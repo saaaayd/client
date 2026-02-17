@@ -41,9 +41,11 @@ export function AttendanceManagement() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   useEffect(() => {
-    fetchAttendance(selectedDate);
-    fetchTotalStudents();
-  }, [selectedDate]);
+    if (user?.role !== 'student') {
+      fetchAttendance(selectedDate);
+      fetchTotalStudents();
+    }
+  }, [selectedDate, user]);
 
   const fetchTotalStudents = async () => {
     try {

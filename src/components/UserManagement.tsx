@@ -113,6 +113,10 @@ export function UserManagement() {
     };
     const [staffFormData, setStaffFormData] = useState(initialStaffForm);
 
+    const getErrorMessage = (error: any) => {
+        return error.response?.data?.message || error.message || 'An unknown error occurred';
+    };
+
     useEffect(() => {
         if (canManageEmployees || user?.role === 'staff') {
             if (activeUserTab === 'students') {
@@ -226,7 +230,7 @@ export function UserManagement() {
             fetchStudents();
             fetchRooms();
         } catch (error: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to save student record.' });
+            Swal.fire({ icon: 'error', title: 'Error', text: getErrorMessage(error) });
         } finally {
             setLoading(false);
         }
@@ -257,7 +261,7 @@ export function UserManagement() {
                     fetchEmployees();
                 }
             } catch (error: any) {
-                Swal.fire('Error', error.response?.data?.message || `Failed to delete ${type}.`, 'error');
+                Swal.fire('Error', getErrorMessage(error), 'error');
             }
         }
     };
@@ -273,27 +277,34 @@ export function UserManagement() {
             Swal.fire('Approved', 'User approval successful.', 'success');
             fetchPendingUsers();
         } catch (error: any) {
-            Swal.fire('Error', error.response?.data?.message || 'Failed to approve user.', 'error');
+            Swal.fire('Error', getErrorMessage(error), 'error');
         }
     };
 
     const handleRejectUser = async (id: string) => {
         const result = await Swal.fire({
             title: 'Reject User?',
-            text: 'This will reject the user registration.',
+            text: 'Please provide a reason for rejection:',
+            input: 'text',
+            inputPlaceholder: 'Reason...',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: 'Yes, reject'
+            confirmButtonText: 'Yes, reject',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to write a reason!';
+                }
+            }
         });
 
         if (result.isConfirmed) {
             try {
-                await axios.put(`/api/users/${id}/reject`);
+                await axios.put(`/api/users/${id}/reject`, { reason: result.value });
                 Swal.fire('Rejected', 'User has been rejected.', 'success');
                 fetchPendingUsers();
             } catch (error: any) {
-                Swal.fire('Error', error.response?.data?.message || 'Failed to reject user.', 'error');
+                Swal.fire('Error', getErrorMessage(error), 'error');
             }
         }
     };
@@ -321,7 +332,7 @@ export function UserManagement() {
             setIsStaffModalOpen(false);
             fetchEmployees();
         } catch (error: any) {
-            Swal.fire({ icon: 'error', title: 'Error', text: error.response?.data?.message || 'Failed to add employee.' });
+            Swal.fire({ icon: 'error', title: 'Error', text: getErrorMessage(error) });
         } finally {
             setLoading(false);
         }
@@ -346,7 +357,7 @@ export function UserManagement() {
             setIsRoleModalOpen(false);
             fetchEmployees();
         } catch (error: any) {
-            Swal.fire('Error', error.response?.data?.message || 'Failed to update role.', 'error');
+            Swal.fire('Error', getErrorMessage(error), 'error');
         }
     };
 

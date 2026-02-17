@@ -43,11 +43,8 @@ export function Login() {
   const onGoogleSuccess = async (credentialResponse: any) => {
     try {
       if (credentialResponse.credential) {
-        const result = await googleLogin(credentialResponse.credential);
-        if (result && result.status === 'pending') {
-          setSuccess('Registration successful. Please wait for admin approval.');
-          return;
-        }
+        await googleLogin(credentialResponse.credential);
+        // Session is set by googleLogin, App.tsx will handle redirect
       }
     } catch (err: any) {
       console.error("Google Login Error", err);

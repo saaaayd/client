@@ -10,7 +10,7 @@ interface DashboardStats {
 }
 
 interface DashboardAnnouncement {
-  id: number;
+  _id: string; // Changed from id: number to _id: string matching Mongo
   title: string;
   content: string;
   priority: 'normal' | 'important' | 'urgent';
@@ -18,7 +18,7 @@ interface DashboardAnnouncement {
 }
 
 interface DashboardMaintenance {
-  id: number;
+  _id: string; // Changed from id: number to _id: string matching Mongo
   title: string;
   description: string;
   urgency: 'low' | 'medium' | 'high';
@@ -116,7 +116,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <h3 className="text-[#001F3F] mb-4">Recent Announcements</h3>
           <div className="space-y-4">
             {recentAnnouncements.map((announcement) => (
-              <div key={announcement.id} className="border-l-4 border-[#FFD700] pl-4 py-2">
+              <div key={announcement._id} className="border-l-4 border-[#FFD700] pl-4 py-2">
                 <div className="flex items-start justify-between">
                   <h4 className="text-[#001F3F]">{announcement.title}</h4>
                   <span className={`text-xs px-2 py-1 rounded ${announcement.priority === 'urgent'
@@ -143,7 +143,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <div className="space-y-4">
             {urgentMaintenance.length > 0 ? (
               urgentMaintenance.map((request) => (
-                <div key={request.id} className="border border-red-200 bg-red-50 rounded-lg p-4">
+                <div key={request._id} className="border border-red-200 bg-red-50 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="text-[#001F3F]">{request.title}</h4>
