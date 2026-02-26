@@ -11,6 +11,7 @@ interface AuthContextType {
   updateProfile: (data: any) => Promise<any>;
   logout: () => void;
   isLoading: boolean;
+  isAppLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,7 +58,8 @@ function persistSession(token: string, user: User) {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(STORAGE_KEY);
@@ -73,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(null);
       }
     }
-    setIsLoading(false);
+    setIsAppLoading(false);
   }, []);
 
   const setSession = (nextToken: string, apiUser: any) => {
@@ -134,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, googleLogin, setSessionFromOauth, updateProfile, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, googleLogin, setSessionFromOauth, updateProfile, logout, isLoading, isAppLoading }}>
       {children}
     </AuthContext.Provider>
   );

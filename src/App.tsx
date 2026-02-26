@@ -23,7 +23,7 @@ import { PendingValidation } from './components/PendingValidation';
 
 
 function AppContent() {
-  const { user, isLoading } = useAuth();
+  const { user, isAppLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showLogin, setShowLogin] = useState(false);
 
@@ -34,7 +34,7 @@ function AppContent() {
     }
   }, [user]);
 
-  if (isLoading) {
+  if (isAppLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
         <div className="text-center">
