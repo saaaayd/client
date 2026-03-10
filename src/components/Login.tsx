@@ -15,6 +15,7 @@ export function Login() {
   const [middleInitial, setMiddleInitial] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [role, setRole] = useState<'student' | 'staff'>('student');
+  const [otpMethod, setOtpMethod] = useState<'email' | 'sms'>('email');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
@@ -92,7 +93,8 @@ export function Login() {
           studentId: role === 'student' ? studentId : undefined,
           password,
           role,
-          studentProfile: role === 'student' ? {
+          otpMethod,
+          studentProfile: (role === 'student' || otpMethod === 'sms') ? {
             roomNumber: 'TBD',
             phoneNumber: phoneNumber ? `+63${phoneNumber.replace(/^0+/, '')}` : '',
             emergencyContactName: '',
@@ -162,7 +164,7 @@ export function Login() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: identifier })
+        body: JSON.stringify({ email: identifier, otpMethod })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -282,6 +284,16 @@ export function Login() {
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <h3 className="text-center font-semibold text-[#001F3F]">Recovery</h3>
                 <p className="text-sm text-center text-gray-600">Enter your email to receive an OTP.</p>
+                <div className="flex gap-4 mb-4 justify-center">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="resetOtpMethod" value="email" checked={otpMethod === 'email'} onChange={() => setOtpMethod('email')} className="text-[#001F3F]" />
+                    <span className="text-sm text-gray-700">Email OTP</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="resetOtpMethod" value="sms" checked={otpMethod === 'sms'} onChange={() => setOtpMethod('sms')} className="text-[#001F3F]" />
+                    <span className="text-sm text-gray-700">SMS OTP</span>
+                  </label>
+                </div>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -303,7 +315,7 @@ export function Login() {
             ) : step === 'reset-otp' ? (
               <form onSubmit={handleVerifyResetOtp} className="space-y-4">
                 <h3 className="text-center font-semibold text-[#001F3F]">Verify OTP</h3>
-                <p className="text-sm text-center text-gray-600">Enter the 6-digit code sent to {registerEmail}</p>
+                <p className="text-sm text-center text-gray-600">Enter the 6-digit code sent to {otpMethod === 'email' ? registerEmail : 'your phone'}</p>
                 <div>
                   <input
                     type="text"
@@ -378,30 +390,42 @@ export function Login() {
                 </div>
 
                 {role === 'student' && (
-                  <>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={studentId}
-                        onChange={(e) => setStudentId(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
-                        placeholder="Student ID"
-                        required
-                      />
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">+63</span>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                        className="w-full pl-11 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
-                        placeholder="9123456789"
-                        required
-                      />
-                    </div>
-                  </>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={studentId}
+                      onChange={(e) => setStudentId(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                      placeholder="Student ID"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-4 mt-2 justify-center">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="regOtpMethod" value="email" checked={otpMethod === 'email'} onChange={() => setOtpMethod('email')} className="text-[#001F3F]" />
+                    <span className="text-sm text-gray-700">Email OTP</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="regOtpMethod" value="sms" checked={otpMethod === 'sms'} onChange={() => setOtpMethod('sms')} className="text-[#001F3F]" />
+                    <span className="text-sm text-gray-700">SMS OTP</span>
+                  </label>
+                </div>
+
+                {(role === 'student' || otpMethod === 'sms') && (
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">+63</span>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                      className="w-full pl-11 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                      placeholder="9123456789"
+                      required={otpMethod === 'sms' || role === 'student'}
+                    />
+                  </div>
                 )}
 
                 <div className="relative">
@@ -449,7 +473,7 @@ export function Login() {
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="text-center mb-4">
-                  <p className="text-gray-600">Enter the 6-digit code sent to <span className="font-bold">{registerEmail}</span>{phoneNumber && <span> and <span className="font-bold">+63{phoneNumber}</span></span>}</p>
+                  <p className="text-gray-600">Enter the 6-digit code sent to <span className="font-bold">{otpMethod === 'sms' && phoneNumber ? `+63${phoneNumber}` : registerEmail}</span></p>
                 </div>
                 <div>
                   <input
