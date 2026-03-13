@@ -57,13 +57,15 @@ export function Login() {
         setError('Account is pending approval. Please wait for admin confirmation.');
         return;
       }
-
-      setError('Google login failed.');
+      // Show the server's error message if available
+      const msg = err.response?.data?.message;
+      setError(msg || 'Google login failed. Please use email/password login instead.');
     }
   };
 
   const onGoogleError = () => {
-    setError('Google login failed.');
+    // Only log, don't show UI error — this fires for silent One Tap failures too
+    console.warn('Google One Tap failed silently.');
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -557,7 +559,6 @@ export function Login() {
                   <GoogleLogin
                     onSuccess={onGoogleSuccess}
                     onError={onGoogleError}
-                    useOneTap
                   />
                 </div>
               </div>

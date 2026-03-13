@@ -54,3 +54,8 @@ button {
   font-size: 0.875rem;
   font-weight: 500;
 }
+
+/* Fix Radix UI Dialog blocking clicks for SweetAlert2 */
+.swal2-container {
+  pointer-events: auto !important;
+}

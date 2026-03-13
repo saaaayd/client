@@ -58,6 +58,7 @@ interface Room {
     roomNumber: string;
     capacity: number;
     students_count: number;
+    status?: string;
 }
 
 export function UserManagement() {
@@ -110,6 +111,7 @@ export function UserManagement() {
         name: '', // Deprecated for input, used for display fallback
         email: '',
         password: '',
+        role: 'staff',
     };
     const [staffFormData, setStaffFormData] = useState(initialStaffForm);
 
@@ -489,10 +491,11 @@ export function UserManagement() {
                                         </span>
                                     ) : (
                                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
-                                            item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                            item.role === 'admin' ? 'bg-rose-100 text-rose-700' :
+                                            item.role === 'manager' ? 'bg-purple-100 text-purple-700' :
                                                 'bg-blue-100 text-blue-700'
                                             }`}>
-                                            <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
+                                            <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : item.role === 'admin' ? 'Admin' : item.role === 'manager' ? 'Manager' : 'Staff'}
                                         </span>
                                     )}
                                 </div>
@@ -530,9 +533,9 @@ export function UserManagement() {
                                             </Button>
                                         </>
                                     )}
-                                    {activeUserTab === 'employees' && isSuperAdmin && (
+                                    {activeUserTab === 'employees' && isAdmin && (
                                         <Button variant="ghost" size="sm" onClick={() => openRoleModal(item)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
-                                            <Edit className="w-4 h-4 mr-1" /> Role
+                                            <Edit className="w-4 h-4 mr-1" /> Manage
                                         </Button>
                                     )}
                                     {activeUserTab !== 'pending' && (
@@ -625,10 +628,11 @@ export function UserManagement() {
                                                 ) : <span className="text-xs text-gray-400 italic">Not set</span>
                                             ) : (
                                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${item.role === 'super_admin' ? 'bg-indigo-100 text-indigo-700' :
-                                                    item.role === 'manager' || item.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                                    item.role === 'admin' ? 'bg-rose-100 text-rose-700' :
+                                                    item.role === 'manager' ? 'bg-purple-100 text-purple-700' :
                                                         'bg-blue-100 text-blue-700'
                                                     }`}>
-                                                    <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : (item.role === 'manager' || item.role === 'admin' ? 'Manager' : 'Staff')}
+                                                    <Shield className="w-3 h-3" /> {item.role === 'super_admin' ? 'Super Admin' : item.role === 'admin' ? 'Admin' : item.role === 'manager' ? 'Manager' : 'Staff'}
                                                 </span>
                                             )}
                                         </td>
@@ -674,9 +678,9 @@ export function UserManagement() {
                                                     </Button>
                                                 </>
                                             )}
-                                            {activeUserTab === 'employees' && isSuperAdmin && (
-                                                <Button variant="ghost" size="icon" onClick={() => openRoleModal(item)} className="h-8 w-8 text-indigo-600 hover:bg-indigo-50">
-                                                    <Edit className="w-4 h-4" />
+                                            {activeUserTab === 'employees' && isAdmin && (
+                                                <Button variant="ghost" size="sm" onClick={() => openRoleModal(item)} className="text-indigo-600 hover:bg-indigo-50 h-8 mx-1">
+                                                    <Edit className="w-4 h-4 mr-1 inline" /> Manage
                                                 </Button>
                                             )}
                                             {activeUserTab !== 'pending' && (
@@ -764,6 +768,11 @@ export function UserManagement() {
                         </div>
 
                         <div>
+                            <Label>Contact Number</Label>
+                            <Input value={studentFormData.phone_number} onChange={e => setStudentFormData({ ...studentFormData, phone_number: e.target.value })} placeholder="e.g. 0912 345 6789" />
+                        </div>
+
+                        <div>
                             <Label>Room</Label>
                             <select
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -771,7 +780,9 @@ export function UserManagement() {
                                 onChange={e => setStudentFormData({ ...studentFormData, room_id: e.target.value })}
                             >
                                 <option value="">Select Room</option>
-                                {rooms.map(r => <option key={r._id} value={r._id}>Room {r.roomNumber}</option>)}
+                                {rooms
+                                    .filter((room) => room._id === studentFormData.room_id || (room.status !== 'Occupied' && (room.students_count || 0) < room.capacity))
+                                    .map(r => <option key={r._id} value={r._id}>Room {r.roomNumber}</option>)}
                             </select>
                         </div>
                     </div>
@@ -826,6 +837,18 @@ export function UserManagement() {
                             />
                         </div>
                         <div>
+                            <Label>Role</Label>
+                            <select
+                                className="w-full border rounded p-2 mt-1"
+                                value={staffFormData.role}
+                                onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value })}
+                            >
+                                <option value="staff">Staff</option>
+                                <option value="manager">Manager</option>
+                                {isSuperAdmin && <option value="admin">Admin</option>}
+                            </select>
+                        </div>
+                        <div className="col-span-2">
                             <Label>Password</Label>
                             <Input
                                 value={staffFormData.password}
@@ -860,7 +883,7 @@ export function UserManagement() {
                                 >
                                     <option value="staff">Staff</option>
                                     <option value="manager">Manager</option>
-                                    {/* <option value="admin">Admin</option> legacy */}
+                                    {isSuperAdmin && <option value="admin">Admin</option>}
                                 </select>
                             </div>
                         </div>

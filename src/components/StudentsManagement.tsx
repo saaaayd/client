@@ -67,6 +67,7 @@ interface Room {
   roomNumber: string;
   capacity: number;
   students_count: number;
+  status?: string;
 }
 
 export function StudentsManagement() {
@@ -601,12 +602,19 @@ export function StudentsManagement() {
                   onChange={e => setFormData({ ...formData, room_id: e.target.value })}
                 >
                   <option value="">Select a room</option>
-                  {rooms.map((room) => (
+                  {rooms
+                    .filter((room) => room._id === formData.room_id || (room.status !== 'Occupied' && (room.students_count || 0) < room.capacity))
+                    .map((room) => (
                     <option key={room._id} value={room._id}>
                       Room {room.roomNumber} ({room.students_count}/{room.capacity} occupants)
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className={editingId ? "col-span-1 md:col-span-2" : "col-span-1 md:col-span-2"}>
+                <Label>Contact Number</Label>
+                <Input value={formData.phone_number} onChange={e => setFormData({ ...formData, phone_number: e.target.value })} placeholder="e.g. 0912 345 6789" />
               </div>
 
               {editingId && (
