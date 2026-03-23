@@ -4,7 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { Lock, Mail, AlertCircle, ShieldCheck, User, Briefcase } from 'lucide-react';
 
 export function Login() {
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot-password'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot-password' | 'login-otp'>('login');
   const [step, setStep] = useState<'details' | 'otp' | 'reset-otp' | 'reset-password'>('details');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -230,6 +230,52 @@ export function Login() {
     }
   };
 
+  const handleLoginOtpRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch('/api/auth/login-otp-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setSuccess('OTP sent to your phone.');
+      setStep('otp');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleLoginOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit OTP.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/login-otp-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber, otp })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setSessionFromOauth(data.token, data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
 
   const isRegister = mode === 'register';
 
@@ -262,7 +308,7 @@ export function Login() {
           )}
 
           {/* Mode Toggle */}
-          {mode !== 'forgot-password' && (
+          {mode !== 'forgot-password' && mode !== 'login-otp' && (
             <div className="flex mb-6 rounded-lg overflow-hidden border border-gray-200">
               <button
                 type="button"
@@ -352,6 +398,57 @@ export function Login() {
                 <button type="submit" className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366]">
                   Reset Password
                 </button>
+              </form>
+            )
+          ) : mode === 'login-otp' ? (
+            step === 'details' ? (
+              <form onSubmit={handleLoginOtpRequest} className="space-y-4">
+                <h3 className="text-center font-semibold text-[#001F3F]">Phone OTP Login</h3>
+                <p className="text-sm text-center text-gray-600">Enter your registered phone number.</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">+63</span>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                    placeholder="9123456789"
+                    required
+                  />
+                </div>
+                <button type="submit" className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366] transition-colors">
+                  Request OTP
+                </button>
+                <div className="flex justify-center mt-2">
+                  <button type="button" onClick={() => setMode('login')} className="text-sm text-gray-500 hover:text-gray-700">
+                    Back to Email Login
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleLoginOtpVerify} className="space-y-4">
+                <h3 className="text-center font-semibold text-[#001F3F]">Verify OTP</h3>
+                <p className="text-center text-sm text-gray-600">
+                  Enter the 6-digit code sent to <span className="font-bold">+63{phoneNumber}</span>
+                </p>
+                <div>
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full text-center text-2xl tracking-[0.5em] font-bold px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFD700] focus:border-transparent outline-none"
+                    placeholder="000000"
+                    required
+                  />
+                </div>
+                <button type="submit" className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366] transition-colors">
+                  Verify & Login
+                </button>
+                <div className="flex justify-center mt-2">
+                  <button type="button" onClick={() => setStep('details')} className="text-sm text-gray-500 hover:text-gray-700">
+                    Back
+                  </button>
+                </div>
               </form>
             )
           ) : isRegister ? (
@@ -469,7 +566,7 @@ export function Login() {
                   disabled={isLoading}
                   className="w-full bg-[#001F3F] text-white py-2.5 rounded-lg hover:bg-[#003366] transition-colors disabled:opacity-50"
                 >
-                  {isLoading ? 'Sending OTP...' : 'Next: Verify Email'}
+                  {isLoading ? 'Sending OTP...' : 'Verify Account'}
                 </button>
               </form>
             ) : (
@@ -535,7 +632,14 @@ export function Login() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center mt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login-otp'); setStep('details'); setError(''); setSuccess(''); }}
+                    className="text-sm text-[#001F3F] hover:underline"
+                  >
+                    Login via SMS OTP
+                  </button>
                   <button
                     type="button"
                     onClick={() => { setMode('forgot-password'); setStep('details'); setError(''); }}

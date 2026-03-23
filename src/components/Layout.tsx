@@ -14,7 +14,8 @@ import {
   User as UserIcon,
   ShieldCheck,
   BedDouble,
-  UserCheck
+  UserCheck,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import Notifications from './Notifications';
 
@@ -38,6 +39,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'logs', label: 'System Logs', icon: ShieldCheck },
+    ...(user?.role === 'super_admin' ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : [])
   ];
 
   const studentMenuItems = [

@@ -864,7 +864,33 @@ export function PaymentsManagement() {
               Paid
             </Button>
             <Button
-              className="bg-[#001F3F] hover:bg-[#003366] text-white min-w-[100px]"
+              className="bg-red-600 hover:bg-red-700 text-white min-w-[100px]"
+              onClick={async () => {
+                if (!viewingPayment) return;
+                const { value: text } = await Swal.fire({
+                  title: 'Reject Payment',
+                  input: 'textarea',
+                  inputLabel: 'Reason for rejection',
+                  inputPlaceholder: 'Enter reason here...',
+                  showCancelButton: true
+                });
+                if (text) {
+                  try {
+                    await axios.patch(`/api/payments/${viewingPayment._id || viewingPayment.id}`, { status: 'rejected', notes: text });
+                    setIsReceiptModalOpen(false);
+                    fetchPayments();
+                    Swal.fire('Rejected', 'Payment was rejected.', 'success');
+                  } catch (e) {
+                    console.error(e);
+                    Swal.fire('Error', 'Failed to update status.', 'error');
+                  }
+                }
+              }}
+            >
+              Reject
+            </Button>
+            <Button
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 min-w-[100px]"
               onClick={() => setIsReceiptModalOpen(false)}
             >
               Cancel

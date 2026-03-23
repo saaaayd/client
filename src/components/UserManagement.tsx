@@ -88,6 +88,7 @@ export function UserManagement() {
     // Permissions
     const isSuperAdmin = user?.role === 'super_admin';
     const canManageEmployees = ['admin', 'manager', 'super_admin'].includes(user?.role || '');
+    const canViewEmployees = ['admin', 'super_admin'].includes(user?.role || '');
 
     // Student Form State
     const initialStudentForm = {
@@ -379,9 +380,10 @@ export function UserManagement() {
                 s.email.toLowerCase().includes(term);
         } else {
             const s = item as Staff;
-            return s.name.toLowerCase().includes(term) ||
-                s.email.toLowerCase().includes(term) ||
-                s.role.toLowerCase().includes(term);
+            const staffName = s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || '';
+            return staffName.toLowerCase().includes(term) ||
+                (s.email ? s.email.toLowerCase().includes(term) : false) ||
+                (s.role ? s.role.toLowerCase().includes(term) : false);
         }
     });
 
@@ -413,7 +415,7 @@ export function UserManagement() {
                 >
                     All Students
                 </button>
-                {canManageEmployees && (
+                {canViewEmployees && (
                     <button
                         onClick={() => { setActiveUserTab('employees'); setSearchTerm(''); }}
                         className={`pb-2 px-4 font-semibold text-sm transition-colors relative ${activeUserTab === 'employees' ? 'text-[#001F3F] border-b-2 border-[#001F3F]' : 'text-gray-500 hover:text-gray-700'}`}
@@ -533,7 +535,7 @@ export function UserManagement() {
                                             </Button>
                                         </>
                                     )}
-                                    {activeUserTab === 'employees' && isAdmin && (
+                                    {activeUserTab === 'employees' && isSuperAdmin && (
                                         <Button variant="ghost" size="sm" onClick={() => openRoleModal(item)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 h-8">
                                             <Edit className="w-4 h-4 mr-1" /> Manage
                                         </Button>
@@ -678,7 +680,7 @@ export function UserManagement() {
                                                     </Button>
                                                 </>
                                             )}
-                                            {activeUserTab === 'employees' && isAdmin && (
+                                            {activeUserTab === 'employees' && isSuperAdmin && (
                                                 <Button variant="ghost" size="sm" onClick={() => openRoleModal(item)} className="text-indigo-600 hover:bg-indigo-50 h-8 mx-1">
                                                     <Edit className="w-4 h-4 mr-1 inline" /> Manage
                                                 </Button>
@@ -844,7 +846,7 @@ export function UserManagement() {
                                 onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value })}
                             >
                                 <option value="staff">Staff</option>
-                                <option value="manager">Manager</option>
+                                {isSuperAdmin && <option value="manager">Manager</option>}
                                 {isSuperAdmin && <option value="admin">Admin</option>}
                             </select>
                         </div>

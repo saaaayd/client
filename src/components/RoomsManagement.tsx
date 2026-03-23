@@ -189,7 +189,9 @@ const RoomsManagement: React.FC = () => {
                                     <td colSpan={7} className="text-center py-8 text-slate-500">No rooms found</td>
                                 </tr>
                             ) : (
-                                currentRooms.map((room) => (
+                                currentRooms.map((room) => {
+                                    const derivedStatus = (room.status === 'Available' && (room.capacity - (room.students_count || 0)) <= 0) ? 'Occupied' : room.status;
+                                    return (
                                     <tr key={room._id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900">{room.roomNumber}</td>
                                         <td className="px-6 py-4">{room.capacity}</td>
@@ -204,11 +206,11 @@ const RoomsManagement: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">{currencyFormatter.format(room.price)}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${room.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
-                                                room.status === 'Occupied' ? 'bg-blue-100 text-blue-700' :
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${derivedStatus === 'Available' ? 'bg-emerald-100 text-emerald-700' :
+                                                derivedStatus === 'Occupied' ? 'bg-blue-100 text-blue-700' :
                                                     'bg-amber-100 text-amber-700'
                                                 }`}>
-                                                {room.status}
+                                                {derivedStatus}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-500">
@@ -231,7 +233,7 @@ const RoomsManagement: React.FC = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ))
+                                )})
                             )}
                         </tbody>
                     </table>
@@ -288,18 +290,20 @@ const RoomsManagement: React.FC = () => {
                 ) : currentRooms.length === 0 ? (
                     <div className="text-center py-8 text-slate-500">No rooms found</div>
                 ) : (
-                    currentRooms.map((room) => (
+                    currentRooms.map((room) => {
+                        const derivedStatus = (room.status === 'Available' && (room.capacity - (room.students_count || 0)) <= 0) ? 'Occupied' : room.status;
+                        return (
                         <div key={room._id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                             <div className="flex justify-between items-start mb-3">
                                 <div>
                                     <h3 className="font-bold text-slate-900 text-lg">Room {room.roomNumber}</h3>
                                     <p className="text-indigo-600 font-semibold">{currencyFormatter.format(room.price)}</p>
                                 </div>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${room.status === 'Available' ? 'bg-emerald-100 text-emerald-700' :
-                                    room.status === 'Occupied' ? 'bg-blue-100 text-blue-700' :
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${derivedStatus === 'Available' ? 'bg-emerald-100 text-emerald-700' :
+                                    derivedStatus === 'Occupied' ? 'bg-blue-100 text-blue-700' :
                                         'bg-amber-100 text-amber-700'
                                     }`}>
-                                    {room.status}
+                                    {derivedStatus}
                                 </span>
                             </div>
 
@@ -341,7 +345,7 @@ const RoomsManagement: React.FC = () => {
                                 </button>
                             </div>
                         </div>
-                    ))
+                    )})
                 )}
                 {/* Pagination Controls Mobile */}
                 {maxPage > 1 && (

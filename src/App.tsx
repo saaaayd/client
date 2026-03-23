@@ -20,6 +20,7 @@ import { SystemLogs } from './components/SystemLogs';
 import { StudentPayments } from './components/StudentPayments';
 import { CompleteProfile } from './components/CompleteProfile';
 import { PendingValidation } from './components/PendingValidation';
+import { SystemSettings } from './components/SystemSettings';
 
 
 function AppContent() {
@@ -104,6 +105,8 @@ function AppContent() {
           return <AnnouncementsManagement />;
         case 'logs':
           return <SystemLogs />;
+        case 'settings':
+          return <SystemSettings />;
         default:
           return <AdminDashboard onNavigate={setCurrentPage} />;
       }

@@ -18,7 +18,7 @@ import {
 } from "./ui/pagination";
 
 interface AnnouncementDto {
-  id: number;
+  _id: string;
   title: string;
   content: string;
   priority: 'normal' | 'important' | 'urgent';
@@ -32,7 +32,7 @@ export function AnnouncementsManagement() {
 
   const [announcements, setAnnouncements] = useState<AnnouncementDto[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // FIX: Explicitly define the type for formData so priority can be any of the 3 values
   const [formData, setFormData] = useState<{
@@ -62,7 +62,7 @@ export function AnnouncementsManagement() {
 
   const openModal = (ann: AnnouncementDto | null = null) => {
     if (ann) {
-      setEditingId(ann.id);
+      setEditingId(ann._id);
       setFormData({
         title: ann.title,
         content: ann.content,
@@ -106,7 +106,7 @@ export function AnnouncementsManagement() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!isAdmin) return;
 
     const res = await Swal.fire({
@@ -164,7 +164,7 @@ export function AnnouncementsManagement() {
       <div className="grid gap-4">
         {currentAnnouncements.map((a) => (
           <div
-            key={a.id}
+            key={a._id}
             className={`bg-white p-4 rounded-lg shadow-sm border-l-4 ${priorityColor(a.priority)} transition-all hover:shadow-md`}
           >
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
@@ -192,7 +192,7 @@ export function AnnouncementsManagement() {
                   <Button size="icon" variant="ghost" onClick={() => openModal(a)} className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50">
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleDelete(a.id)} className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50">
+                  <Button size="icon" variant="ghost" onClick={() => handleDelete(a._id)} className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
