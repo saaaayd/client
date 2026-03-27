@@ -255,7 +255,7 @@ export function AttendanceManagement() {
           <p className="text-gray-600 text-sm mt-1">Track student check-in and check-out logs</p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          {(user?.role !== 'student') && (
+          {user && (
             <Button
               onClick={() => setShowMyQR(true)}
               variant="outline"

@@ -1,16 +1,34 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import NProgress from 'nprogress';
+import 'nprogress/nprogress.css';
+
+NProgress.configure({ showSpinner: false });
 
 const setupAxiosInterceptors = () => {
     // Set base URL from environment variable if available
     axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
+    // Request interceptor
+    axios.interceptors.request.use(
+        (config) => {
+            NProgress.start();
+            return config;
+        },
+        (error) => {
+            NProgress.done();
+            return Promise.reject(error);
+        }
+    );
+
     // Response interceptor
     axios.interceptors.response.use(
         (response) => {
+            NProgress.done();
             return response;
         },
         (error) => {
+            NProgress.done();
             if (axios.isAxiosError(error)) {
 
                 // Handle 401 Unauthorized (Token expired/invalid)

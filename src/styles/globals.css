@@ -59,3 +59,13 @@ button {
 .swal2-container {
   pointer-events: auto !important;
 }
+
+/* Custom NProgress styling */
+#nprogress .bar {
+  background: var(--accent-yellow) !important;
+  height: 4px !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px var(--accent-yellow), 0 0 5px var(--accent-yellow) !important;
+}
