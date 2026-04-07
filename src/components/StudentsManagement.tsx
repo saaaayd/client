@@ -603,7 +603,7 @@ export function StudentsManagement() {
                 >
                   <option value="">Select a room</option>
                   {rooms
-                    .filter((room) => room._id === formData.room_id || (room.status !== 'Occupied' && (room.students_count || 0) < room.capacity))
+                    .filter((room) => room._id === formData.room_id || (room.status !== 'Occupied' && room.status !== 'Maintenance' && (room.students_count || 0) < room.capacity))
                     .map((room) => (
                     <option key={room._id} value={room._id}>
                       Room {room.roomNumber} ({room.students_count}/{room.capacity} occupants)

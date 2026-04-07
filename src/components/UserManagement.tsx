@@ -784,14 +784,14 @@ export function UserManagement() {
                                 >
                                     <option value="">Select Room</option>
                                     {rooms
-                                        .filter((room) => room._id === studentFormData.room_id || (room.status !== 'Occupied' && (room.students_count || 0) < room.capacity))
+                                        .filter((room) => room._id === studentFormData.room_id || (room.status !== 'Occupied' && room.status !== 'Maintenance' && (room.students_count || 0) < room.capacity))
                                         .map(r => <option key={r._id} value={r._id}>Room {r.roomNumber}</option>)}
                                 </select>
                                 <Button 
                                     type="button" 
                                     variant="outline" 
                                     onClick={() => {
-                                        const availableRoom = rooms.find(room => room._id !== studentFormData.room_id && room.status !== 'Occupied' && (room.students_count || 0) < room.capacity);
+                                        const availableRoom = rooms.find(room => room._id !== studentFormData.room_id && room.status !== 'Occupied' && room.status !== 'Maintenance' && (room.students_count || 0) < room.capacity);
                                         if (availableRoom) {
                                             setStudentFormData({ ...studentFormData, room_id: availableRoom._id });
                                         } else {
