@@ -11,6 +11,15 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { useAuth } from '../context/AuthContext';
+import { usePagination } from '../hooks/usePagination';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./ui/pagination";
 
 // Setup the localizer by providing the moment (or globalize, or Luxon) instance.
 const localizer = momentLocalizer(moment);
@@ -39,6 +48,7 @@ export function TaskManagement() {
     const [rooms, setRooms] = useState<RoomDto[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
     const initialForm = {
         title: '',
@@ -51,6 +61,9 @@ export function TaskManagement() {
         syncToCalendar: false,
     };
     const [formData, setFormData] = useState(initialForm);
+
+    const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(tasks.filter(t => !t.isHoliday), 10);
+    const currentTasks = currentData();
 
     useEffect(() => {
         fetchTasks();
@@ -225,71 +238,149 @@ export function TaskManagement() {
                     <h2 className="text-[#001F3F] text-2xl font-bold">Task Management</h2>
                     <p className="text-gray-600">Sanitation, Maintenance, and Inspections</p>
                 </div>
-                {(user?.role === 'admin' || user?.role === 'staff' || user?.role === 'super_admin') && (
-                    <Button onClick={() => openModal()} className="w-full md:w-auto bg-[#001F3F] text-white">
-                        <Plus className="w-4 h-4 mr-2" /> Add Task
-                    </Button>
-                )}
+                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('calendar')}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white text-[#001F3F] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Calendar
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-[#001F3F] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            List
+                        </button>
+                    </div>
+                    {(user?.role === 'admin' || user?.role === 'staff' || user?.role === 'super_admin') && (
+                        <Button onClick={() => openModal()} className="bg-[#001F3F] text-white">
+                            <Plus className="w-4 h-4 mr-2" /> Add Task
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            <div className="bg-white p-2 md:p-4 rounded-lg shadow flex-1 h-[500px] md:h-[calc(100vh-220px)] min-h-[500px] overflow-hidden">
-                {/* Custom CSS for Calendar Toolbar on Mobile */}
-                <style>{`
-                    .rbc-calendar {
-                        font-family: inherit;
-                    }
-                    @media (max-width: 768px) {
-                        .rbc-toolbar {
-                            flex-direction: column;
-                            gap: 8px;
-                            align-items: stretch;
-                            margin-bottom: 10px;
-                        }
-                        .rbc-toolbar-label {
-                            margin: 4px 0;
-                            text-align: center;
-                            font-weight: bold;
-                            font-size: 14px;
-                        }
-                        .rbc-btn-group {
-                            display: flex;
-                            justify-content: center;
-                            width: 100%;
-                            flex-wrap: wrap;
-                        }
-                        .rbc-btn-group button {
-                            flex: 1;
-                            font-size: 12px;
-                            padding: 4px 8px;
-                            white-space: nowrap;
-                        }
-                        .rbc-header {
-                            font-size: 12px;
-                            padding: 4px 0;
-                        }
-                        .rbc-event {
-                            font-size: 10px;
-                        }
-                        .rbc-time-slot {
-                            font-size: 10px;
-                        }
-                    }
-                `}</style>
-                <Calendar
-                    localizer={localizer}
-                    events={events}
-                    startAccessor="start"
-                    endAccessor="end"
-                    style={{ height: '100%' }}
-                    eventPropGetter={eventStyleGetter}
-                    onSelectEvent={onSelectEvent}
-                    views={['month', 'week', 'day', 'agenda']}
-                    date={date}
-                    view={view}
-                    onNavigate={onNavigate}
-                    onView={onView}
-                />
-            </div>
+            {viewMode === 'calendar' ? (
+                <div className="bg-white p-2 md:p-4 rounded-lg shadow flex-1 h-[500px] md:h-[calc(100vh-220px)] min-h-[500px] overflow-hidden">
+                    {/* ... (Existing Calendar Code) ... */}
+                    <Calendar
+                        localizer={localizer}
+                        events={events}
+                        startAccessor="start"
+                        endAccessor="end"
+                        style={{ height: '100%' }}
+                        eventPropGetter={eventStyleGetter}
+                        onSelectEvent={onSelectEvent}
+                        views={['month', 'week', 'day', 'agenda']}
+                        date={date}
+                        view={view}
+                        onNavigate={onNavigate}
+                        onView={onView}
+                    />
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {/* Desktop View */}
+                    <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-[#001F3F] text-white">
+                                <tr>
+                                    <th className="px-6 py-3">Task Title</th>
+                                    <th className="px-6 py-3">Type</th>
+                                    <th className="px-6 py-3">Room</th>
+                                    <th className="px-6 py-3">Due Date</th>
+                                    <th className="px-6 py-3">Status</th>
+                                    <th className="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {currentTasks.map((task) => (
+                                    <tr key={task._id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 font-medium text-gray-900">{task.title}</td>
+                                        <td className="px-6 py-4 capitalize">{task.type}</td>
+                                        <td className="px-6 py-4">Room {task.assignedRoom}</td>
+                                        <td className="px-6 py-4">{moment(task.dueDate).format('MMM DD, YYYY hh:mm A')}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                {task.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right space-x-2">
+                                            <Button variant="ghost" size="sm" onClick={() => openModal(task)}>
+                                                <Edit className="w-4 h-4 text-blue-600" />
+                                            </Button>
+                                            <Button variant="ghost" size="sm" onClick={() => handleDelete(task._id, task.googleEventId)}>
+                                                <Trash2 className="w-4 h-4 text-red-600" />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-4">
+                        {currentTasks.map((task) => (
+                            <div key={task._id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-[#001F3F]">{task.title}</h3>
+                                    <span className={`px-2 py-1 rounded-full text-[10px] font-semibold uppercase ${task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                        {task.status}
+                                    </span>
+                                </div>
+                                <div className="text-xs text-gray-500 space-y-1">
+                                    <p><span className="font-semibold text-gray-700">Type:</span> <span className="capitalize">{task.type}</span></p>
+                                    <p><span className="font-semibold text-gray-700">Room:</span> Room {task.assignedRoom}</p>
+                                    <p><span className="font-semibold text-gray-700">Due:</span> {moment(task.dueDate).format('MMM DD, h:mm A')}</p>
+                                </div>
+                                <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
+                                    <Button variant="outline" size="sm" onClick={() => openModal(task)} className="h-8 text-xs">
+                                        <Edit className="w-3 h-3 mr-1" /> Edit
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleDelete(task._id, task.googleEventId)} className="h-8 text-xs text-red-600 border-red-100">
+                                        <Trash2 className="w-3 h-3 mr-1" /> Delete
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {maxPage > 1 && (
+                        <div className="flex justify-center mt-6">
+                            <Pagination>
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            onClick={(e) => { e.preventDefault(); prev(); }}
+                                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                        />
+                                    </PaginationItem>
+                                    {Array.from({ length: maxPage }).map((_, i) => (
+                                        <PaginationItem key={i}>
+                                            <PaginationLink
+                                                isActive={currentPage === i + 1}
+                                                onClick={(e) => { e.preventDefault(); jump(i + 1); }}
+                                                className="cursor-pointer"
+                                            >
+                                                {i + 1}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    ))}
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            onClick={(e) => { e.preventDefault(); next(); }}
+                                            className={currentPage === maxPage ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Modal */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
