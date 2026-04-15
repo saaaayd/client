@@ -11,6 +11,7 @@ import { Label } from './ui/label';
 import { useAuth } from '../context/AuthContext';
 import { Textarea } from './ui/textarea';
 import { usePagination } from '../hooks/usePagination';
+import { takeNotificationFocus } from '../utils/notificationFocus';
 import {
   Pagination,
   PaginationContent,
@@ -52,12 +53,27 @@ export function PaymentsManagement() {
   // Receipt Modal State
   const [viewingPayment, setViewingPayment] = useState<any>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [highlightPaymentId, setHighlightPaymentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPayments();
     fetchStudents();
     fetchRooms();
   }, []);
+
+  useEffect(() => {
+    if (!payments.length) return;
+    const focus = takeNotificationFocus();
+    if (focus?.onModel === 'Payment' && focus.relatedId) {
+      const id = String(focus.relatedId);
+      setHighlightPaymentId(id);
+      requestAnimationFrame(() => {
+        document
+          .querySelector(`#payment-row-desktop-${id}, #payment-row-mobile-${id}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  }, [payments]);
 
   const fetchPayments = async () => {
     const res = await axios.get('/api/payments');
@@ -448,8 +464,15 @@ export function PaymentsManagement() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {currentPayments.map((p: any) => (
-              <tr key={p.id}>
+            {currentPayments.map((p: any) => {
+              const pid = String(p._id || p.id);
+              const isHi = highlightPaymentId && highlightPaymentId === pid;
+              return (
+              <tr
+                key={pid}
+                id={`payment-row-desktop-${pid}`}
+                className={isHi ? 'bg-amber-50 ring-2 ring-inset ring-[#FFD700]' : undefined}
+              >
                 <td className="px-6 py-4">{p.student?.name || 'Unknown'}</td>
                 <td className="px-6 py-4 font-mono text-xs">{p.referenceNumber || '--'}</td>
                 <td className="px-6 py-4">{currencyFormatter.format(Number(p.amount || 0))}</td>
@@ -530,7 +553,8 @@ export function PaymentsManagement() {
                   )}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
 
@@ -570,8 +594,15 @@ export function PaymentsManagement() {
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {currentPayments.map((p: any) => (
-          <div key={p.id} className="bg-white p-4 rounded-lg shadow border border-gray-100">
+        {currentPayments.map((p: any) => {
+          const pid = String(p._id || p.id);
+          const isHi = highlightPaymentId && highlightPaymentId === pid;
+          return (
+          <div
+            key={pid}
+            id={`payment-row-mobile-${pid}`}
+            className={`bg-white p-4 rounded-lg shadow border ${isHi ? 'border-[#FFD700] ring-2 ring-[#FFD700]' : 'border-gray-100'}`}
+          >
             <div className="flex justify-between items-start mb-3">
               <div>
                 <div className="font-semibold text-[#001F3F]">{p.student?.name || 'Unknown'}</div>
@@ -658,7 +689,8 @@ export function PaymentsManagement() {
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
         {/* Pagination Controls Mobile */}
         {maxPage > 1 && (
           <div className="flex justify-center pt-2">

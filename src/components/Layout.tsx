@@ -179,7 +179,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
               </h2>
             </div>
             <div className="flex items-center gap-4">
-              <Notifications />
+              <Notifications onNavigate={onNavigate} />
               <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
                 <span>{new Date().toLocaleDateString('en-US', {
                   weekday: 'long',

@@ -1,5 +1,6 @@
 {
   "name": "client",
+  "description": "Frontend (Vite/React). Backend API: ../server",
   "private": true,
   "version": "0.0.0",
   "type": "module",

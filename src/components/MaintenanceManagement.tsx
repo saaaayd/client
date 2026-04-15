@@ -18,6 +18,7 @@ import {
 } from "./ui/pagination";
 
 import { useAuth } from '../context/AuthContext';
+import { takeNotificationFocus } from '../utils/notificationFocus';
 
 const initialForm = {
   student_id: '',
@@ -36,6 +37,7 @@ export function MaintenanceManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<typeof initialForm>(initialForm);
+  const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -45,6 +47,18 @@ export function MaintenanceManagement() {
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!requests.length) return;
+    const focus = takeNotificationFocus();
+    if (focus?.onModel === 'MaintenanceRequest' && focus.relatedId) {
+      const id = String(focus.relatedId);
+      setHighlightRequestId(id);
+      requestAnimationFrame(() => {
+        document.getElementById(`maintenance-row-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  }, [requests]);
 
   const fetchRequests = async () => {
     try {
@@ -183,15 +197,19 @@ export function MaintenanceManagement() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {currentRequests.map((req: any) => (
+        {currentRequests.map((req: any) => {
+          const rid = String(req._id || req.id);
+          const isHi = highlightRequestId && highlightRequestId === rid;
+          return (
           <div
-            key={req._id || req.id}
+            key={rid}
+            id={`maintenance-row-${rid}`}
             className={`bg-white p-4 rounded shadow border-l-4 ${req.urgency === 'high'
               ? 'border-red-500'
               : req.urgency === 'medium'
                 ? 'border-yellow-500'
                 : 'border-blue-500'
-              }`}
+              } ${isHi ? 'ring-2 ring-[#FFD700] ring-offset-2' : ''}`}
           >
             <div className="flex justify-between">
               <div>
@@ -252,7 +270,8 @@ export function MaintenanceManagement() {
               </span>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {maxPage > 1 && (

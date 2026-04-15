@@ -12,6 +12,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "./ui/pagination";
+import { takeNotificationFocus } from '../utils/notificationFocus';
 
 interface Payment {
   _id: string;
@@ -33,6 +34,7 @@ export function StudentPayments() {
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [receiptLinks, setReceiptLinks] = useState<Record<string, string>>({});
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [highlightPaymentId, setHighlightPaymentId] = useState<string | null>(null);
 
   const actionablePayments = payments.filter(
     (p) => p.status === 'pending' || p.status === 'overdue'
@@ -53,6 +55,18 @@ export function StudentPayments() {
     if (!user) return;
     fetchPayments();
   }, [user]);
+
+  useEffect(() => {
+    if (!payments.length) return;
+    const focus = takeNotificationFocus();
+    if (focus?.onModel === 'Payment' && focus.relatedId) {
+      const id = String(focus.relatedId);
+      setHighlightPaymentId(id);
+      requestAnimationFrame(() => {
+        document.getElementById(`payment-row-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
+  }, [payments]);
 
   const fetchPayments = async () => {
     if (!user) return;
@@ -122,10 +136,13 @@ export function StudentPayments() {
         <p className="text-sm text-gray-500">No payment records found.</p>
       ) : (
         <div className="space-y-4">
-          {currentPayments.map((p) => (
+          {currentPayments.map((p) => {
+            const isHi = highlightPaymentId && highlightPaymentId === p._id;
+            return (
             <div
               key={p._id}
-              className="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+              id={`payment-row-${p._id}`}
+              className={`border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 ${isHi ? 'border-[#FFD700] ring-2 ring-[#FFD700] bg-amber-50/40' : 'border-gray-200'}`}
             >
               <div>
                 <p className="font-semibold text-gray-900">
@@ -195,7 +212,8 @@ export function StudentPayments() {
                 </div>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
