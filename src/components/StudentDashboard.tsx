@@ -177,6 +177,48 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
         <StudentPayments />
       </div>
 
+      {/* Announcements Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[#001F3F]">Recent Announcements</h3>
+          <button
+            onClick={() => onNavigate('announcements')}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            View All
+          </button>
+        </div>
+        {recentAnnouncements.length > 0 ? (
+          <div className="space-y-3">
+            {recentAnnouncements.map((a) => (
+              <div key={a.id} className="border-l-4 border-[#FFD700] pl-4 py-2">
+                <div className="flex items-start justify-between">
+                  <h4 className="text-[#001F3F] font-semibold">{a.title}</h4>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    a.priority === 'urgent'
+                      ? 'bg-red-100 text-red-700'
+                      : a.priority === 'important'
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {a.priority}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{a.content}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(a.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Megaphone className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+            <p>No announcements at this time</p>
+          </div>
+        )}
+      </div>
+
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-[#001F3F] mb-4">Quick Actions</h3>

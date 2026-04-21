@@ -42,7 +42,7 @@ interface RoomDto {
 }
 
 export function TaskManagement() {
-    const { user } = useAuth();
+    const { user, isAppLoading } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [events, setEvents] = useState<any[]>([]);
     const [rooms, setRooms] = useState<RoomDto[]>([]);
@@ -66,11 +66,12 @@ export function TaskManagement() {
     const currentTasks = currentData();
 
     useEffect(() => {
-        fetchTasks();
-        if (user?.role === 'admin' || user?.role === 'super_admin') {
-            fetchRooms();
+        if (isAppLoading || !user) return;
+        void fetchTasks();
+        if (user.role === 'admin' || user.role === 'super_admin') {
+            void fetchRooms();
         }
-    }, [user]);
+    }, [user, isAppLoading]);
 
     const fetchTasks = async () => {
         try {

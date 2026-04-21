@@ -88,6 +88,8 @@ function AppContent() {
       switch (currentPage) {
         case 'dashboard':
           return <AdminDashboard onNavigate={setCurrentPage} />;
+        case 'profile':
+          return <StudentProfile />;
         case 'rooms':
           return <RoomsManagement />;
         case 'students':
@@ -117,6 +119,8 @@ function AppContent() {
           // For now, let's reuse AdminDashboard or give them access to common modules.
           // Prompt says: "Staff can view room assignments, student lists"
           return <AdminDashboard onNavigate={setCurrentPage} />;
+        case 'profile':
+          return <StudentProfile />;
         case 'rooms':
           return <RoomsManagement />;
         case 'students':

@@ -31,7 +31,7 @@ const initialForm = {
 };
 
 export function MaintenanceManagement() {
-  const { user } = useAuth();
+  const { user, isAppLoading } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,13 +40,12 @@ export function MaintenanceManagement() {
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchRequests();
-      if (user.role === 'admin' || user.role === 'super_admin') {
-        fetchStudents();
-      }
+    if (isAppLoading || !user) return;
+    void fetchRequests();
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      void fetchStudents();
     }
-  }, [user]);
+  }, [user, isAppLoading]);
 
   useEffect(() => {
     if (!requests.length) return;

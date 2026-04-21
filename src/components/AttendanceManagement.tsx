@@ -35,7 +35,7 @@ interface StudentOption {
 }
 
 export function AttendanceManagement() {
-  const { user } = useAuth();
+  const { user, isAppLoading } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceLogDto[]>([]);
   const [totalStudents, setTotalStudents] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -47,11 +47,12 @@ export function AttendanceManagement() {
   const [manualStudentId, setManualStudentId] = useState('');
 
   useEffect(() => {
-    if (user?.role !== 'student') {
-      fetchAttendance(selectedDate);
-      fetchTotalStudents();
+    if (isAppLoading || !user) return;
+    if (user.role !== 'student') {
+      void fetchAttendance(selectedDate);
+      void fetchTotalStudents();
     }
-  }, [selectedDate, user]);
+  }, [selectedDate, user, isAppLoading]);
 
   const fetchTotalStudents = async () => {
     try {

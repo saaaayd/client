@@ -43,7 +43,9 @@ function mapApiUser(apiUser: any): User {
     lastName: apiUser.lastName,
     middleInitial: apiUser.middleInitial,
     email: apiUser.email,
-    role: apiUser.role,
+    role: apiUser.role != null && apiUser.role !== ''
+      ? String(apiUser.role).toLowerCase().replace(/\s+/g, '_')
+      : 'student',
     status: apiUser.status || 'approved', // Default to approved for existing users
     studentProfile: studentProfile,
     studentId: apiUser.studentId,

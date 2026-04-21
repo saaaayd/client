@@ -505,7 +505,7 @@ export function StudentsManagement() {
           <DialogHeader>
             <DialogTitle className="text-[#001F3F] text-xl font-bold flex items-center gap-2">
               <Edit className="w-5 h-5" />
-              Edit Student Details
+              {editingId ? 'Edit Student Details' : 'Add New Student'}
             </DialogTitle>
           </DialogHeader>
 
@@ -614,7 +614,7 @@ export function StudentsManagement() {
 
               <div className={editingId ? "col-span-1 md:col-span-2" : "col-span-1 md:col-span-2"}>
                 <Label>Contact Number</Label>
-                <Input value={formData.phone_number} onChange={e => setFormData({ ...formData, phone_number: e.target.value })} placeholder="e.g. 0912 345 6789" />
+                <Input type="tel" inputMode="numeric" pattern="[0-9+ ]*" value={formData.phone_number} onChange={e => { const val = e.target.value.replace(/[^0-9+ ]/g, ''); setFormData({ ...formData, phone_number: val }); }} placeholder="e.g. 0912 345 6789" />
               </div>
 
               {editingId && (
@@ -644,7 +644,7 @@ export function StudentsManagement() {
                   </div>
                   <div>
                     <Label>Contact Phone</Label>
-                    <Input value={formData.emergency_contact_phone} onChange={e => setFormData({ ...formData, emergency_contact_phone: e.target.value })} placeholder="0912 345 6789" />
+                    <Input type="tel" inputMode="numeric" pattern="[0-9+ ]*" value={formData.emergency_contact_phone} onChange={e => { const val = e.target.value.replace(/[^0-9+ ]/g, ''); setFormData({ ...formData, emergency_contact_phone: val }); }} placeholder="0912 345 6789" />
                   </div>
                 </>
               )}

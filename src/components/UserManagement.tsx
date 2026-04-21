@@ -771,7 +771,7 @@ export function UserManagement() {
 
                         <div>
                             <Label>Contact Number</Label>
-                            <Input value={studentFormData.phone_number} onChange={e => setStudentFormData({ ...studentFormData, phone_number: e.target.value })} placeholder="e.g. 0912 345 6789" />
+                            <Input type="tel" inputMode="numeric" pattern="[0-9+ ]*" value={studentFormData.phone_number} onChange={e => { const val = e.target.value.replace(/[^0-9+ ]/g, ''); setStudentFormData({ ...studentFormData, phone_number: val }); }} placeholder="e.g. 0912 345 6789" />
                         </div>
 
                         <div className="col-span-1 md:col-span-2">

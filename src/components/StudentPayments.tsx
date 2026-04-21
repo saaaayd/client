@@ -48,6 +48,18 @@ export function StudentPayments() {
     (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
   );
 
+  // Find the next due payment (soonest pending/overdue)
+  const nextDuePayment = actionablePayments
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] || null;
+
+  const getDaysUntilDue = (dueDate: string) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    return Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
   const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(displayedPayments, 5);
   const currentPayments = currentData();
 
@@ -132,22 +144,76 @@ export function StudentPayments() {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-[#001F3F] mb-4">Recent Payments</h3>
+
+      {/* Next Due Payment Banner */}
+      {nextDuePayment && (
+        <div className={`mb-4 p-4 rounded-lg border-2 ${
+          nextDuePayment.status === 'overdue'
+            ? 'border-red-400 bg-red-50'
+            : 'border-amber-400 bg-amber-50'
+        }`}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse ${
+              nextDuePayment.status === 'overdue'
+                ? 'bg-red-500 text-white'
+                : 'bg-amber-500 text-white'
+            }`}>
+              ⚠ NEXT DUE
+            </span>
+            <span className={`text-sm font-semibold ${
+              nextDuePayment.status === 'overdue' ? 'text-red-700' : 'text-amber-700'
+            }`}>
+              {nextDuePayment.status === 'overdue'
+                ? `Overdue by ${Math.abs(getDaysUntilDue(nextDuePayment.dueDate))} day(s)!`
+                : getDaysUntilDue(nextDuePayment.dueDate) === 0
+                  ? 'Due Today!'
+                  : `Due in ${getDaysUntilDue(nextDuePayment.dueDate)} day(s)`
+              }
+            </span>
+          </div>
+          <p className={`text-lg font-bold ${
+            nextDuePayment.status === 'overdue' ? 'text-red-800' : 'text-amber-800'
+          }`}>
+            {currencyFormatter.format(nextDuePayment.amount)} · {nextDuePayment.type.toUpperCase()}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Due: {nextDuePayment.dueDate ? new Date(nextDuePayment.dueDate).toLocaleDateString() : 'Not set'}
+          </p>
+        </div>
+      )}
+
       {payments.length === 0 ? (
         <p className="text-sm text-gray-500">No payment records found.</p>
       ) : (
         <div className="space-y-4">
           {currentPayments.map((p) => {
             const isHi = highlightPaymentId && highlightPaymentId === p._id;
+            const isNextDue = nextDuePayment && nextDuePayment._id === p._id;
             return (
             <div
               key={p._id}
               id={`payment-row-${p._id}`}
-              className={`border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 ${isHi ? 'border-[#FFD700] ring-2 ring-[#FFD700] bg-amber-50/40' : 'border-gray-200'}`}
+              className={`border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 ${
+                isHi
+                  ? 'border-[#FFD700] ring-2 ring-[#FFD700] bg-amber-50/40'
+                  : isNextDue
+                    ? (p.status === 'overdue'
+                        ? 'border-red-300 bg-red-50/50 ring-1 ring-red-200'
+                        : 'border-amber-300 bg-amber-50/50 ring-1 ring-amber-200')
+                    : 'border-gray-200'
+              }`}
             >
               <div>
-                <p className="font-semibold text-gray-900">
-                  {currencyFormatter.format(p.amount)} · {p.type.toUpperCase()}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-900">
+                    {currencyFormatter.format(p.amount)} · {p.type.toUpperCase()}
+                  </p>
+                  {isNextDue && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      p.status === 'overdue' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
+                    }`}>NEXT DUE</span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">
                   Due:{' '}
                   {p.dueDate ? new Date(p.dueDate).toLocaleDateString() : 'Not set'}

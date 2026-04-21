@@ -31,34 +31,33 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
 
   const adminMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'rooms', label: 'Room', icon: BedDouble },
-    { id: 'students', label: 'User', icon: Users },
     { id: 'payments', label: 'Payments', icon: PhilippinePeso },
-    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'tasks', label: 'Task', icon: Calendar },
+    { id: 'rooms', label: 'Room', icon: BedDouble },
+    { id: 'students', label: 'User', icon: Users },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'logs', label: 'System Logs', icon: ShieldCheck },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     ...(user?.role === 'super_admin' ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : [])
   ];
 
   const studentMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'profile', label: 'My Profile', icon: UserIcon },
     { id: 'payments', label: 'My Payments', icon: PhilippinePeso },
-    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'attendance', label: 'Attendance', icon: Clock },
+    { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
+    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ];
 
   const staffMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'attendance', label: 'Attendance', icon: Clock },
+    { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'rooms', label: 'Room', icon: BedDouble },
     { id: 'students', label: 'User', icon: Users },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    { id: 'tasks', label: 'Task', icon: Calendar },
-    { id: 'attendance', label: 'Attendance', icon: Clock },
   ];
 
   const menuItems = (user?.role === 'admin' || user?.role === 'manager' || user?.role === 'super_admin') ? adminMenuItems : (user?.role === 'staff' ? staffMenuItems : studentMenuItems);
@@ -93,10 +92,20 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
         </nav>
 
         <div className="p-4 border-t border-white/10">
-          <div className="px-4 py-2 mb-2">
-            <p className="text-sm text-white/90">{user?.name}</p>
-            <p className="text-xs text-white/60 capitalize">{user?.role}</p>
-          </div>
+          <button
+            onClick={() => onNavigate('profile')}
+            className="w-full px-4 py-2 mb-2 rounded-lg hover:bg-white/10 transition-colors text-left cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#FFD700] text-[#001F3F] rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+              <div>
+                <p className="text-sm text-white/90">{user?.name}</p>
+                <p className="text-xs text-white/60 capitalize">{user?.role?.replace('_', ' ')}</p>
+              </div>
+            </div>
+          </button>
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
@@ -146,10 +155,20 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
             </nav>
 
             <div className="p-4 border-t border-white/10">
-              <div className="px-4 py-2 mb-2">
-                <p className="text-sm text-white/90">{user?.name}</p>
-                <p className="text-xs text-gray-400 capitalize">{user?.role?.replace('_', ' ')}</p>
-              </div>
+              <button
+                onClick={() => { onNavigate('profile'); setSidebarOpen(false); }}
+                className="w-full px-4 py-2 mb-2 rounded-lg hover:bg-white/10 transition-colors text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#FFD700] text-[#001F3F] rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                    {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/90">{user?.name}</p>
+                    <p className="text-xs text-gray-400 capitalize">{user?.role?.replace('_', ' ')}</p>
+                  </div>
+                </div>
+              </button>
               <button
                 onClick={logout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
