@@ -754,11 +754,11 @@ export function UserManagement() {
                         {/* Simplified for brevity - utilizing same form inputs as original StudentsManagement */}
                         <div className="col-span-1 md:col-span-2">
                             <Label>First Name <span className="text-red-500">*</span></Label>
-                            <Input value={studentFormData.first_name} onChange={e => setStudentFormData({ ...studentFormData, first_name: e.target.value })} />
+                            <Input value={studentFormData.first_name} onChange={e => { const val = e.target.value.replace(/[^a-zA-Z\sñÑ-]/g, ''); setStudentFormData({ ...studentFormData, first_name: val }); }} />
                         </div>
                         <div className="col-span-1 md:col-span-2">
                             <Label>Last Name <span className="text-red-500">*</span></Label>
-                            <Input value={studentFormData.last_name} onChange={e => setStudentFormData({ ...studentFormData, last_name: e.target.value })} />
+                            <Input value={studentFormData.last_name} onChange={e => { const val = e.target.value.replace(/[^a-zA-Z\sñÑ-]/g, ''); setStudentFormData({ ...studentFormData, last_name: val }); }} />
                         </div>
                         <div className="col-span-1 md:col-span-2">
                             <Label>Email <span className="text-red-500">*</span></Label>
@@ -766,7 +766,7 @@ export function UserManagement() {
                         </div>
                         <div>
                             <Label>Student ID</Label>
-                            <Input value={studentFormData.student_id} onChange={e => setStudentFormData({ ...studentFormData, student_id: e.target.value })} />
+                            <Input value={studentFormData.student_id} onChange={e => { const val = e.target.value.replace(/[^0-9-]/g, ''); setStudentFormData({ ...studentFormData, student_id: val }); }} />
                         </div>
 
                         <div>
@@ -824,7 +824,7 @@ export function UserManagement() {
                                 <Label>First Name <span className="text-red-500">*</span></Label>
                                 <Input
                                     value={staffFormData.firstName}
-                                    onChange={e => setStaffFormData({ ...staffFormData, firstName: e.target.value })}
+                                    onChange={e => { const val = e.target.value.replace(/[^a-zA-Z\sñÑ-]/g, ''); setStaffFormData({ ...staffFormData, firstName: val }); }}
                                     placeholder="First Name"
                                 />
                             </div>
@@ -832,7 +832,7 @@ export function UserManagement() {
                                 <Label>Last Name <span className="text-red-500">*</span></Label>
                                 <Input
                                     value={staffFormData.lastName}
-                                    onChange={e => setStaffFormData({ ...staffFormData, lastName: e.target.value })}
+                                    onChange={e => { const val = e.target.value.replace(/[^a-zA-Z\sñÑ-]/g, ''); setStaffFormData({ ...staffFormData, lastName: val }); }}
                                     placeholder="Last Name"
                                 />
                             </div>
