@@ -77,41 +77,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
         </p>
       </div>
 
-      {/* Announcements Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[#001F3F]">Announcements</h3>
-        </div>
-        {announcements.length > 0 ? (
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {announcements.map((a) => (
-              <div key={a.id} className="border-l-4 border-[#FFD700] pl-4 py-2">
-                <div className="flex items-start justify-between">
-                  <h4 className="text-[#001F3F] font-semibold">{a.title}</h4>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    a.priority === 'urgent'
-                      ? 'bg-red-100 text-red-700'
-                      : a.priority === 'important'
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {a.priority}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{a.content}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(a.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Megaphone className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-            <p>No announcements at this time</p>
-          </div>
-        )}
-      </div>
+
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -161,6 +127,42 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="flex flex-col gap-6">
+          {/* Announcements Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#001F3F]">Announcements</h3>
+            </div>
+            {announcements.length > 0 ? (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {announcements.map((a) => (
+                  <div key={a.id} className="border-l-4 border-[#FFD700] pl-4 py-2">
+                    <div className="flex items-start justify-between">
+                      <h4 className="text-[#001F3F] font-semibold">{a.title}</h4>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        a.priority === 'urgent'
+                          ? 'bg-red-100 text-red-700'
+                          : a.priority === 'important'
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {a.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{a.content}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(a.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Megaphone className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p>No announcements at this time</p>
+              </div>
+            )}
+          </div>
+
           {/* My Maintenance Requests */}
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-[#001F3F] mb-4">My Maintenance Requests</h3>
@@ -207,42 +209,6 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Announcements Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[#001F3F]">Announcements</h3>
-            </div>
-            {announcements.length > 0 ? (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {announcements.map((a) => (
-                  <div key={a.id} className="border-l-4 border-[#FFD700] pl-4 py-2">
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-[#001F3F] font-semibold">{a.title}</h4>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        a.priority === 'urgent'
-                          ? 'bg-red-100 text-red-700'
-                          : a.priority === 'important'
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {a.priority}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{a.content}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(a.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Megaphone className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No announcements at this time</p>
-              </div>
-            )}
           </div>
         </div>
 

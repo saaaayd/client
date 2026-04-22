@@ -305,12 +305,16 @@ export function TaskManagement() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right space-x-2">
-                                            <Button variant="ghost" size="sm" onClick={() => openModal(task)}>
-                                                <Edit className="w-4 h-4 text-blue-600" />
-                                            </Button>
-                                            <Button variant="ghost" size="sm" onClick={() => handleDelete(task._id)}>
-                                                <Trash2 className="w-4 h-4 text-red-600" />
-                                            </Button>
+                                            {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'staff') && (
+                                                <>
+                                                    <Button variant="ghost" size="sm" onClick={() => openModal(task)}>
+                                                        <Edit className="w-4 h-4 text-blue-600" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => handleDelete(task._id)}>
+                                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                                    </Button>
+                                                </>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -334,12 +338,16 @@ export function TaskManagement() {
                                     <p><span className="font-semibold text-gray-700">Due:</span> {moment(task.dueDate).format('MMM DD, h:mm A')}</p>
                                 </div>
                                 <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
-                                    <Button variant="outline" size="sm" onClick={() => openModal(task)} className="h-8 text-xs">
-                                        <Edit className="w-3 h-3 mr-1" /> Edit
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={() => handleDelete(task._id)} className="h-8 text-xs text-red-600 border-red-100">
-                                        <Trash2 className="w-3 h-3 mr-1" /> Delete
-                                    </Button>
+                                    {(user?.role === 'admin' || user?.role === 'manager' || user?.role === 'staff') && (
+                                        <>
+                                            <Button variant="outline" size="sm" onClick={() => openModal(task)} className="h-8 text-xs">
+                                                <Edit className="w-3 h-3 mr-1" /> Edit
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleDelete(task._id)} className="h-8 text-xs text-red-600 border-red-100">
+                                                <Trash2 className="w-3 h-3 mr-1" /> Delete
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}
