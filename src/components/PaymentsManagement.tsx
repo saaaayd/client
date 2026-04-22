@@ -436,7 +436,7 @@ export function PaymentsManagement() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow border-l-4 border-[#001F3F]">
           <p className="text-sm text-gray-500">Total Collected</p>
           <p className="text-2xl text-[#001F3F]">
