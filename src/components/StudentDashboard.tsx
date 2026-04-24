@@ -82,45 +82,46 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Balance Card */}
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#FFD700]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-[#FFD700] text-[#001F3F] p-2 rounded-lg">
-              <PhilippinePeso className="w-5 h-5" />
-            </div>
-            {overdueCount > 0 && (
-              <AlertCircle className="w-4 h-4 text-red-500" />
-            )}
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-[#FFD700] flex items-center gap-4">
+          <div className="bg-[#FFD700] text-[#001F3F] p-3 rounded-xl shadow-sm">
+            <PhilippinePeso className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">₱{totalDue.toFixed(2)}</p>
-          <p className="text-xs text-gray-600">Current Balance</p>
-          {overdueCount > 0 && (
-            <p className="text-[10px] text-red-600 mt-1">{overdueCount} overdue payment(s)</p>
-          )}
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-[#001F3F]">₱{totalDue.toFixed(2)}</p>
+              {overdueCount > 0 && (
+                <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />
+              )}
+            </div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Current Balance</p>
+          </div>
         </div>
 
         {/* Maintenance Requests */}
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#001F3F]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-[#001F3F] text-white p-2 rounded-lg">
-              <Wrench className="w-5 h-5" />
-            </div>
-            {pendingRequests > 0 && (
-              <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">Active</span>
-            )}
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-[#001F3F] flex items-center gap-4">
+          <div className="bg-[#001F3F] text-white p-3 rounded-xl shadow-sm">
+            <Wrench className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">{pendingRequests}</p>
-          <p className="text-xs text-gray-600">Pending Requests</p>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-[#001F3F]">{pendingRequests}</p>
+              {pendingRequests > 0 && (
+                <span className="bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Active</span>
+              )}
+            </div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pending Requests</p>
+          </div>
         </div>
 
         {/* Announcements */}
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-blue-500 text-white p-2 rounded-lg">
-              <Megaphone className="w-5 h-5" />
-            </div>
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500 flex items-center gap-4">
+          <div className="bg-blue-500 text-white p-3 rounded-xl shadow-sm">
+            <Megaphone className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">{announcements.length}</p>
-          <p className="text-xs text-gray-600">Active Announcements</p>
+          <div className="flex-1">
+            <p className="text-2xl font-bold text-[#001F3F]">{announcements.length}</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Announcements</p>
+          </div>
         </div>
       </div>
 

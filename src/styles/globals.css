@@ -69,3 +69,55 @@ button {
 #nprogress .peg {
   box-shadow: 0 0 10px var(--accent-yellow), 0 0 5px var(--accent-yellow) !important;
 }
+
+/* React Big Calendar Agenda View Improvements */
+.rbc-agenda-view {
+  font-family: inherit;
+}
+
+.rbc-agenda-view table.rbc-agenda-table {
+  border: none;
+}
+
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  background-color: var(--primary-navy);
+  color: white;
+  padding: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  padding: 16px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #eee;
+  font-size: 0.875rem;
+}
+
+.rbc-agenda-date-cell {
+  font-weight: bold;
+  color: var(--primary-navy);
+  white-space: nowrap;
+}
+
+.rbc-agenda-time-cell {
+  color: var(--text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.rbc-agenda-event-cell {
+  font-weight: 500;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
+  background-color: #f9fafb;
+}
+
+.rbc-agenda-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-light);
+  font-style: italic;
+}

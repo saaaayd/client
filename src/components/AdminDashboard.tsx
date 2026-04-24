@@ -61,51 +61,57 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#001F3F]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-[#001F3F] text-white p-2 rounded-lg">
-              <Users className="w-5 h-5" />
-            </div>
-            <TrendingUp className="w-4 h-4 text-green-500" />
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-[#001F3F] flex items-center gap-4">
+          <div className="bg-[#001F3F] text-white p-3 rounded-xl shadow-sm">
+            <Users className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">{stats?.totalStudents ?? (loading ? '—' : 0)}</p>
-          <p className="text-xs text-gray-600">Total Students</p>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-[#001F3F]">{stats?.totalStudents ?? (loading ? '—' : 0)}</p>
+              <TrendingUp className="w-4 h-4 text-green-500" />
+            </div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Total Students</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#FFD700]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-[#FFD700] text-[#001F3F] p-2 rounded-lg">
-              <Wrench className="w-5 h-5" />
-            </div>
-            {(stats?.pendingMaintenance ?? 0) > 0 && (
-              <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded">Pending</span>
-            )}
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-[#FFD700] flex items-center gap-4">
+          <div className="bg-[#FFD700] text-[#001F3F] p-3 rounded-xl shadow-sm">
+            <Wrench className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">{stats?.pendingMaintenance ?? (loading ? '—' : 0)}</p>
-          <p className="text-xs text-gray-600">Pending Maintenance</p>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-[#001F3F]">{stats?.pendingMaintenance ?? (loading ? '—' : 0)}</p>
+              {(stats?.pendingMaintenance ?? 0) > 0 && (
+                <span className="bg-orange-100 text-orange-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Pending</span>
+              )}
+            </div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Maintenance</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-blue-500 text-white p-2 rounded-lg">
-              <Calendar className="w-5 h-5" />
-            </div>
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-blue-500 flex items-center gap-4">
+          <div className="bg-blue-500 text-white p-3 rounded-xl shadow-sm">
+            <Calendar className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">{stats?.pendingCleaning ?? (loading ? '—' : 0)}</p>
-          <p className="text-xs text-gray-600">Tasks</p>
+          <div className="flex-1">
+            <p className="text-2xl font-bold text-[#001F3F]">{stats?.pendingCleaning ?? (loading ? '—' : 0)}</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pending Tasks</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-red-500 text-white p-2 rounded-lg">
-              <PhilippinePeso className="w-5 h-5" />
-            </div>
-            {stats?.overduePayments && stats.overduePayments > 0 && (
-              <AlertCircle className="w-4 h-4 text-red-500" />
-            )}
+        <div className="bg-white rounded-lg shadow p-5 border-l-4 border-red-500 flex items-center gap-4">
+          <div className="bg-red-500 text-white p-3 rounded-xl shadow-sm">
+            <PhilippinePeso className="w-6 h-6" />
           </div>
-          <p className="text-2xl mb-0.5">{stats?.overduePayments ?? (loading ? '—' : 0)}</p>
-          <p className="text-xs text-gray-600">Overdue Payments</p>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-[#001F3F]">{stats?.overduePayments ?? (loading ? '—' : 0)}</p>
+              {stats?.overduePayments && stats.overduePayments > 0 && (
+                <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />
+              )}
+            </div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Overdue Payments</p>
+          </div>
         </div>
       </div>
 
