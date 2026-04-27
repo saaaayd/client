@@ -2,7 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { Calendar, Clock, UserCheck, UserX, Scan, Search } from 'lucide-react';
+import moment from 'moment';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Calendar, Clock, UserCheck, UserX, Scan, Search, Download, FileText } from 'lucide-react';
+
 import QRCode from 'react-qr-code';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { useAuth } from '../context/AuthContext';
@@ -183,6 +187,66 @@ export function AttendanceManagement() {
     await processAttendanceAction(student._id, student.name);
     setManualStudentId('');
   };
+  
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text('DormSync Attendance Report', 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Date: ${moment(selectedDate).format('MMMM DD, YYYY')}`, 14, 30);
+    doc.text(`Generated on: ${moment().format('MMMM DD, YYYY HH:mm')}`, 14, 36);
+
+    const tableColumn = ["Student Name", "Room", "Check-In", "Check-Out", "Status"];
+    const tableRows: any[] = [];
+
+    filteredAttendance.forEach(log => {
+      const student = typeof log.student === 'string' ? null : log.student;
+      const rowData = [
+        student?.name || 'Unknown',
+        student?.studentProfile?.roomNumber || 'N/A',
+        formatTime(log.timeIn) || '--',
+        formatTime(log.timeOut) || '--',
+        log.status.toUpperCase()
+      ];
+      tableRows.push(rowData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 45,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [0, 31, 63] }
+    });
+
+    doc.save(`Attendance_Report_${selectedDate}.pdf`);
+  };
+
+  const exportToCSV = () => {
+    const headers = ["Student Name", "Room", "Check-In Date", "Check-In Time", "Check-Out Time", "Status"];
+    const rows = filteredAttendance.map(log => {
+      const student = typeof log.student === 'string' ? null : log.student;
+      return [
+        student?.name || 'Unknown',
+        student?.studentProfile?.roomNumber || 'N/A',
+        moment(log.date).format('YYYY-MM-DD'),
+        formatTime(log.timeIn) || '--',
+        formatTime(log.timeOut) || '--',
+        log.status
+      ];
+    });
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Attendance_Report_${selectedDate}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const formatTime = (time?: string | null) => {
     if (!time) return null;
@@ -286,6 +350,22 @@ export function AttendanceManagement() {
               My QR
             </Button>
           )}
+          <Button 
+            onClick={exportToCSV}
+            variant="outline"
+            className="w-full md:w-auto flex items-center justify-center gap-2 border-green-600 text-green-600 hover:bg-green-50"
+          >
+            <Download className="w-5 h-5" />
+            CSV
+          </Button>
+          <Button 
+            onClick={exportToPDF}
+            variant="outline"
+            className="w-full md:w-auto flex items-center justify-center gap-2 border-red-600 text-red-600 hover:bg-red-50"
+          >
+            <FileText className="w-5 h-5" />
+            PDF
+          </Button>
           <Button
             onClick={() => setIsManualModalOpen(true)}
             variant="outline"

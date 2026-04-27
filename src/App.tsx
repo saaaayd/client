@@ -22,6 +22,8 @@ import { CompleteProfile } from './components/CompleteProfile';
 import { PendingValidation } from './components/PendingValidation';
 import { SystemSettings } from './components/SystemSettings';
 import { ErrorPage } from './components/ErrorPage';
+import { PassManagement } from './components/PassManagement';
+
 
 
 function AppContent() {
@@ -109,6 +111,8 @@ function AppContent() {
           return <SystemLogs />;
         case 'settings':
           return <SystemSettings />;
+        case 'passes':
+          return <PassManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
@@ -128,6 +132,8 @@ function AppContent() {
           return <AttendanceManagement />;
         case 'tasks':
           return <TaskManagement />;
+        case 'passes':
+          return <PassManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
@@ -147,6 +153,8 @@ function AppContent() {
           return <AttendanceManagement />;
         case 'announcements':
           return <AnnouncementsManagement />;
+        case 'passes':
+          return <PassManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
