@@ -334,12 +334,12 @@ export const generatePassPermit = (pass: any, user: any) => {
     doc.text("Residence Hall Manager", 150, currY + 8);
 
     // Footer
-    currY = 275;
+    currY = 280; // Move down slightly
     doc.setFontSize(8);
     doc.text("Document Code: DORM-F-009", startX, currY);
-    doc.text("Revision No.: 01", 85, currY);
-    doc.text("Issue No.: 01", 135, currY);
-    doc.text("Issue Date: March 25, 2021", 170, currY, { align: 'right' });
+    doc.text("Revision No.: 01", 75, currY);
+    doc.text("Issue No.: 01", 120, currY);
+    doc.text("Issue Date: March 25, 2021", 190, currY, { align: 'right' });
 
     doc.save(`Pass_Permit_${pass._id}.pdf`);
 };
