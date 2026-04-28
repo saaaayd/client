@@ -5,8 +5,8 @@ import moment from 'moment';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
-    ShieldAlert, Plus, Trash2, CheckCircle, XCircle,
-    Filter, Download, FileText, Edit2, Search, AlertTriangle
+    ShieldAlert, Plus, Trash2,
+    Filter, Download, FileText, Edit2, Search, Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
@@ -20,83 +20,44 @@ import {
     PaginationLink, PaginationNext, PaginationPrevious,
 } from './ui/pagination';
 
-// ─── Offense Catalog ────────────────────────────────────────────────────────
-const OFFENSE_CATALOG: Record<string, { offense: string; points: number }[]> = {
-    'Level 1': [
-        { offense: 'Littering', points: 1 },
-        { offense: 'Vandalism', points: 2 },
-        { offense: 'Improper spitting', points: 2 },
-        { offense: 'Making boisterous noise', points: 3 },
-        { offense: 'Uniform violation', points: 1 },
-        { offense: 'Failure to register in the Logbook/Attendance', points: 5 },
-        { offense: 'Leaving personal belongings in shared spaces', points: 3 },
-        { offense: 'Improper garbage segregation and disposal', points: 3 },
-        { offense: 'Topless and improper clothes outside the sleeping quarter', points: 2 },
-        { offense: 'Sleeping in dorm rooms earlier than stipulated', points: 2 },
-        { offense: 'Displaying disorderly conduct (e.g. bullying, oral defamation, public display of affection)', points: 2 },
-        { offense: 'Failure to turn off lights, electric fan, and electrical appliances', points: 3 },
-        { offense: 'Not attending meetings and activities called by the Dorm Manager', points: 3 },
-    ],
-    'Level 2': [
-        { offense: 'Gambling', points: 8 },
-        { offense: 'Immoral Acts', points: 5 },
-        { offense: 'Insubordination', points: 5 },
-        { offense: 'Dishonesty in any form', points: 5 },
-        { offense: 'Non-compliance with sleeping arrangement', points: 5 },
-        { offense: 'Violation of curfew, study and visiting hours', points: 5 },
-        { offense: 'Sleeping overnight outside the dorm without permission', points: 5 },
-        { offense: 'Spreading rumors that damage the reputation of other occupants', points: 5 },
-        { offense: "No resident's Leave Pass when going out of the dormitory or when coming home late", points: 5 },
-        { offense: 'Disrespect towards dormitory staff or other residents', points: 8 },
-        { offense: 'Allowing outsiders to enter restricted areas for guests', points: 8 },
-    ],
-    'Level 3': [
-        { offense: 'Drinking/consumption of intoxicating beverages within dormitory premises', points: 15 },
-        { offense: 'Drugs: possession, use, or sale of marijuana, narcotics, and hallucinogens', points: 15 },
-        { offense: 'Smoking (including electronic) within dormitory premises', points: 15 },
-        { offense: 'Stealing or attempting to steal money and other property', points: 15 },
-        { offense: 'Vandalism to glass panes, walls, and dormitory properties', points: 15 },
-        { offense: 'Immoral/Indecent behavior including possession of obscene literature, pornographic materials', points: 15 },
-        { offense: 'Misbehavior such as fighting, physical assaulting, intimidating other residents', points: 15 },
-        { offense: 'Cooking inside the room', points: 15 },
-        { offense: 'Unauthorized use of electrical appliances', points: 15 },
-        { offense: 'Repeated/habitual violation of dormitory policies', points: 15 },
-    ],
-};
-
 const LEVEL_COLORS: Record<string, string> = {
     'Level 1': 'bg-yellow-100 text-yellow-800',
     'Level 2': 'bg-orange-100 text-orange-800',
     'Level 3': 'bg-red-100 text-red-800',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-    Active: 'bg-red-100 text-red-700',
-    Resolved: 'bg-green-100 text-green-700',
-};
-
-// ─── Main Component ──────────────────────────────────────────────────────────
 export function DisciplineManagement() {
     const { user } = useAuth();
     const [violations, setViolations] = useState<any[]>([]);
     const [students, setStudents] = useState<any[]>([]);
+    const [offenseCatalog, setOffenseCatalog] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Violation Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingViolation, setEditingViolation] = useState<any>(null);
+    
+    // Manage Offenses Modal
+    const [isManageOffensesOpen, setIsManageOffensesOpen] = useState(false);
+    const [newOffense, setNewOffense] = useState({ level: 'Level 1', offense: '', points: 0 });
+
     const [search, setSearch] = useState('');
     const [filterLevel, setFilterLevel] = useState('All');
-    const [filterStatus, setFilterStatus] = useState('All');
 
     const [formData, setFormData] = useState({
         student: '',
         offenseLevel: 'Level 1',
-        offense: OFFENSE_CATALOG['Level 1'][0].offense,
-        points: OFFENSE_CATALOG['Level 1'][0].points,
+        offense: '',
+        points: 0,
         dateOfOffense: moment().format('YYYY-MM-DD'),
         notes: '',
     });
 
-    useEffect(() => { fetchViolations(); fetchStudents(); }, []);
+    useEffect(() => { 
+        fetchViolations(); 
+        fetchStudents(); 
+        fetchOffenses();
+    }, []);
 
     const fetchViolations = async () => {
         setIsLoading(true);
@@ -115,23 +76,41 @@ export function DisciplineManagement() {
         } catch { /* silently fail */ }
     };
 
+    const fetchOffenses = async () => {
+        try {
+            const res = await axios.get('/api/offenses');
+            setOffenseCatalog(res.data);
+            if (res.data.length > 0 && !formData.offense) {
+                const first = res.data.find((o: any) => o.level === 'Level 1') || res.data[0];
+                setFormData(f => ({ ...f, offenseLevel: first.level, offense: first.offense, points: first.points }));
+            }
+        } catch { /* silently fail */ }
+    };
+
     const handleLevelChange = (level: string) => {
-        const first = OFFENSE_CATALOG[level][0];
-        setFormData(f => ({ ...f, offenseLevel: level, offense: first.offense, points: first.points }));
+        const first = offenseCatalog.find((o: any) => o.level === level);
+        if (first) {
+            setFormData(f => ({ ...f, offenseLevel: level, offense: first.offense, points: first.points }));
+        } else {
+            setFormData(f => ({ ...f, offenseLevel: level, offense: '', points: 0 }));
+        }
     };
 
     const handleOffenseChange = (offense: string) => {
-        const found = OFFENSE_CATALOG[formData.offenseLevel].find(o => o.offense === offense);
+        const found = offenseCatalog.find(o => o.offense === offense && o.level === formData.offenseLevel);
         setFormData(f => ({ ...f, offense, points: found?.points ?? 0 }));
     };
 
     const openCreateModal = () => {
         setEditingViolation(null);
-        const first = OFFENSE_CATALOG['Level 1'][0];
+        const first = offenseCatalog.find(o => o.level === 'Level 1') || offenseCatalog[0];
         setFormData({
-            student: '', offenseLevel: 'Level 1',
-            offense: first.offense, points: first.points,
-            dateOfOffense: moment().format('YYYY-MM-DD'), notes: '',
+            student: '', 
+            offenseLevel: first ? first.level : 'Level 1',
+            offense: first ? first.offense : '', 
+            points: first ? first.points : 0,
+            dateOfOffense: moment().format('YYYY-MM-DD'), 
+            notes: '',
         });
         setIsModalOpen(true);
     };
@@ -152,6 +131,8 @@ export function DisciplineManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.student) { Swal.fire('Warning', 'Please select a student.', 'warning'); return; }
+        if (!formData.offense) { Swal.fire('Warning', 'Please select an offense.', 'warning'); return; }
+        
         try {
             if (editingViolation) {
                 await axios.patch(`/api/violations/${editingViolation._id}`, formData);
@@ -167,16 +148,6 @@ export function DisciplineManagement() {
         }
     };
 
-    const handleResolve = async (id: string) => {
-        const confirm = await Swal.fire({ title: 'Mark as Resolved?', icon: 'question', showCancelButton: true, confirmButtonColor: '#001F3F' });
-        if (!confirm.isConfirmed) return;
-        try {
-            await axios.patch(`/api/violations/${id}`, { status: 'Resolved' });
-            Swal.fire('Done', 'Violation marked as resolved.', 'success');
-            fetchViolations();
-        } catch (err: any) { Swal.fire('Error', err.response?.data?.message || 'Failed.', 'error'); }
-    };
-
     const handleDelete = async (id: string) => {
         const confirm = await Swal.fire({ title: 'Delete Violation?', text: 'This cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' });
         if (!confirm.isConfirmed) return;
@@ -187,6 +158,31 @@ export function DisciplineManagement() {
         } catch (err: any) { Swal.fire('Error', err.response?.data?.message || 'Failed.', 'error'); }
     };
 
+    const handleCreateOffense = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newOffense.offense || newOffense.points < 0) return;
+        try {
+            await axios.post('/api/offenses', newOffense);
+            Swal.fire('Success', 'Demerit added to catalog.', 'success');
+            setNewOffense({ level: 'Level 1', offense: '', points: 0 });
+            fetchOffenses();
+        } catch (err: any) {
+            Swal.fire('Error', err.response?.data?.message || 'Failed to add demerit.', 'error');
+        }
+    };
+
+    const handleDeleteOffense = async (id: string) => {
+        const confirm = await Swal.fire({ title: 'Delete Demerit?', text: 'Remove this from the catalog?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' });
+        if (!confirm.isConfirmed) return;
+        try {
+            await axios.delete(`/api/offenses/${id}`);
+            Swal.fire('Deleted', 'Demerit removed.', 'success');
+            fetchOffenses();
+        } catch (err: any) {
+            Swal.fire('Error', err.response?.data?.message || 'Failed to delete.', 'error');
+        }
+    };
+
     const exportToPDF = () => {
         const doc = new jsPDF();
         doc.setFontSize(18);
@@ -194,12 +190,11 @@ export function DisciplineManagement() {
         doc.setFontSize(11);
         doc.text(`Generated: ${moment().format('MMMM DD, YYYY HH:mm')}`, 14, 30);
         autoTable(doc, {
-            head: [['Student', 'Level', 'Offense', 'Points', 'Date', 'Status']],
+            head: [['Student', 'Level', 'Offense', 'Points', 'Date']],
             body: filtered.map(v => [
                 v.student?.name || 'N/A',
                 v.offenseLevel, v.offense, v.points,
-                moment(v.dateOfOffense).format('MMM DD, YYYY'),
-                v.status,
+                moment(v.dateOfOffense).format('MMM DD, YYYY')
             ]),
             startY: 38,
             styles: { fontSize: 8 },
@@ -209,12 +204,12 @@ export function DisciplineManagement() {
     };
 
     const exportToCSV = () => {
-        const headers = ['Student', 'Student ID', 'Level', 'Offense', 'Points', 'Date', 'Status', 'Notes', 'Reported By'];
+        const headers = ['Student', 'Student ID', 'Level', 'Offense', 'Points', 'Date', 'Notes', 'Reported By'];
         const rows = filtered.map(v => [
             v.student?.name || 'N/A', v.student?.studentId || 'N/A',
             v.offenseLevel, `"${v.offense}"`, v.points,
             moment(v.dateOfOffense).format('YYYY-MM-DD'),
-            v.status, `"${v.notes || ''}"`, v.reportedBy?.name || 'N/A',
+            `"${v.notes || ''}"`, v.reportedBy?.name || 'N/A',
         ]);
         const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -227,16 +222,15 @@ export function DisciplineManagement() {
     const filtered = violations.filter(v => {
         const matchSearch = !search || v.student?.name?.toLowerCase().includes(search.toLowerCase()) || v.student?.studentId?.includes(search);
         const matchLevel = filterLevel === 'All' || v.offenseLevel === filterLevel;
-        const matchStatus = filterStatus === 'All' || v.status === filterStatus;
-        return matchSearch && matchLevel && matchStatus;
+        return matchSearch && matchLevel;
     });
 
     const { currentData, currentPage, maxPage, jump, next, prev } = usePagination(filtered, 10);
     const currentRows = currentData();
 
-    const totalActive = violations.filter(v => v.status === 'Active').length;
-    const totalResolved = violations.filter(v => v.status === 'Resolved').length;
     const canDelete = user?.role === 'admin' || user?.role === 'manager';
+
+    const currentOffenses = offenseCatalog.filter(o => o.level === formData.offenseLevel);
 
     return (
         <div className="space-y-6">
@@ -249,6 +243,11 @@ export function DisciplineManagement() {
                     <p className="text-gray-600 text-sm mt-1">Track and manage student violation records</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                    {canDelete && (
+                        <Button onClick={() => setIsManageOffensesOpen(true)} variant="outline" className="border-[#001F3F] text-[#001F3F] hover:bg-gray-50">
+                            <Settings className="w-4 h-4 mr-2" /> Manage Demerits
+                        </Button>
+                    )}
                     <Button onClick={exportToCSV} variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
                         <Download className="w-4 h-4 mr-2" /> CSV
                     </Button>
@@ -262,18 +261,16 @@ export function DisciplineManagement() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white rounded-xl shadow p-4 border-l-4 border-[#001F3F]">
-                    <p className="text-sm text-gray-500">Total Records</p>
+                    <p className="text-sm text-gray-500">Total Violation Records</p>
                     <p className="text-3xl font-bold text-[#001F3F]">{violations.length}</p>
                 </div>
                 <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
-                    <p className="text-sm text-gray-500">Active</p>
-                    <p className="text-3xl font-bold text-red-600">{totalActive}</p>
-                </div>
-                <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
-                    <p className="text-sm text-gray-500">Resolved</p>
-                    <p className="text-3xl font-bold text-green-600">{totalResolved}</p>
+                    <p className="text-sm text-gray-500">Active Demerits Tracked</p>
+                    <p className="text-3xl font-bold text-red-600">
+                        {violations.reduce((sum, v) => sum + v.points, 0)} pts
+                    </p>
                 </div>
             </div>
 
@@ -295,10 +292,6 @@ export function DisciplineManagement() {
                     <option value="All">All Levels</option>
                     <option>Level 1</option><option>Level 2</option><option>Level 3</option>
                 </select>
-                <select className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FFD700] outline-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                    <option value="All">All Statuses</option>
-                    <option>Active</option><option>Resolved</option>
-                </select>
             </div>
 
             {/* Table */}
@@ -312,20 +305,19 @@ export function DisciplineManagement() {
                                 <th className="px-6 py-4">Offense</th>
                                 <th className="px-6 py-4">Points</th>
                                 <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {isLoading ? (
-                                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-500">
                                     <div className="flex justify-center items-center gap-2">
                                         <div className="w-4 h-4 border-2 border-[#001F3F] border-t-transparent rounded-full animate-spin" />
                                         Loading records...
                                     </div>
                                 </td></tr>
                             ) : currentRows.length === 0 ? (
-                                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-500">No violation records found.</td></tr>
+                                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-500">No violation records found.</td></tr>
                             ) : currentRows.map((v: any) => (
                                 <tr key={v._id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
@@ -350,21 +342,10 @@ export function DisciplineManagement() {
                                     </td>
                                     <td className="px-6 py-4 text-gray-600 text-xs">{moment(v.dateOfOffense).format('MMM DD, YYYY')}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[v.status]}`}>
-                                            {v.status === 'Active' ? <AlertTriangle className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
-                                            {v.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
                                         <div className="flex gap-2">
                                             <Button size="sm" variant="outline" onClick={() => openEditModal(v)} className="text-[#001F3F] border-[#001F3F] hover:bg-blue-50">
                                                 <Edit2 className="w-3 h-3" />
                                             </Button>
-                                            {v.status === 'Active' && (
-                                                <Button size="sm" onClick={() => handleResolve(v._id)} className="bg-green-600 text-white hover:bg-green-700">
-                                                    <CheckCircle className="w-3 h-3 mr-1" /> Resolve
-                                                </Button>
-                                            )}
                                             {canDelete && (
                                                 <Button size="sm" variant="destructive" onClick={() => handleDelete(v._id)}>
                                                     <Trash2 className="w-3 h-3" />
@@ -398,7 +379,7 @@ export function DisciplineManagement() {
                 )}
             </div>
 
-            {/* Add / Edit Modal */}
+            {/* Add / Edit Violation Modal */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="bg-white max-w-lg">
                     <DialogHeader>
@@ -434,8 +415,9 @@ export function DisciplineManagement() {
                             <Label htmlFor="vOffense">Specific Offense</Label>
                             <select id="vOffense" className="w-full border rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-[#FFD700]"
                                 value={formData.offense} onChange={e => handleOffenseChange(e.target.value)}>
-                                {OFFENSE_CATALOG[formData.offenseLevel].map(o => (
-                                    <option key={o.offense} value={o.offense}>{o.offense} ({o.points} pts)</option>
+                                {currentOffenses.length === 0 && <option value="">No offenses found for this level</option>}
+                                {currentOffenses.map(o => (
+                                    <option key={o._id || o.offense} value={o.offense}>{o.offense} ({o.points} pts)</option>
                                 ))}
                             </select>
                             <p className="text-xs text-gray-500 mt-1">
@@ -454,6 +436,65 @@ export function DisciplineManagement() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Manage Demerits Modal */}
+            <Dialog open={isManageOffensesOpen} onOpenChange={setIsManageOffensesOpen}>
+                <DialogContent className="bg-white max-w-3xl max-h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Manage Demerits Catalog</DialogTitle>
+                        <DialogDescription>Add or remove offenses from the system catalog.</DialogDescription>
+                    </DialogHeader>
+                    
+                    <form onSubmit={handleCreateOffense} className="flex gap-2 items-end bg-gray-50 p-4 rounded-lg shrink-0 mt-2">
+                        <div className="w-32">
+                            <Label className="text-xs mb-1 block">Level</Label>
+                            <select className="w-full border rounded p-2 text-sm" value={newOffense.level} onChange={e => setNewOffense(o => ({...o, level: e.target.value}))}>
+                                <option>Level 1</option><option>Level 2</option><option>Level 3</option>
+                            </select>
+                        </div>
+                        <div className="flex-1">
+                            <Label className="text-xs mb-1 block">Offense Description</Label>
+                            <Input placeholder="E.g., Missing Curfew" value={newOffense.offense} onChange={e => setNewOffense(o => ({...o, offense: e.target.value}))} required />
+                        </div>
+                        <div className="w-24">
+                            <Label className="text-xs mb-1 block">Points</Label>
+                            <Input type="number" min="0" value={newOffense.points} onChange={e => setNewOffense(o => ({...o, points: Number(e.target.value)}))} required />
+                        </div>
+                        <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white"><Plus className="w-4 h-4 mr-1"/> Add</Button>
+                    </form>
+
+                    <div className="overflow-y-auto flex-1 mt-4 border rounded-lg">
+                        <table className="w-full text-sm">
+                            <thead className="bg-[#001F3F] text-white sticky top-0">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">Level</th>
+                                    <th className="px-4 py-2 text-left">Offense</th>
+                                    <th className="px-4 py-2 text-left">Points</th>
+                                    <th className="px-4 py-2 w-16"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {offenseCatalog.map(o => (
+                                    <tr key={o._id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-2">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${LEVEL_COLORS[o.level]}`}>
+                                                {o.level}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2 font-medium text-gray-800">{o.offense}</td>
+                                        <td className="px-4 py-2 font-bold text-[#001F3F]">{o.points}</td>
+                                        <td className="px-4 py-2 text-right">
+                                            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteOffense(o._id)}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

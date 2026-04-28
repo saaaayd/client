@@ -10,11 +10,6 @@ const LEVEL_COLORS: Record<string, string> = {
     'Level 3': 'bg-red-100 text-red-800 border-red-300',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-    Active: 'bg-red-100 text-red-700',
-    Resolved: 'bg-green-100 text-green-700',
-};
-
 export function StudentDiscipline() {
     const { user } = useAuth();
     const [data, setData] = useState<{ violations: any[]; totalPoints: number }>({ violations: [], totalPoints: 0 });
@@ -40,8 +35,6 @@ export function StudentDiscipline() {
     };
 
     const warn = getWarningLevel(data.totalPoints);
-    const activeViolations = data.violations.filter(v => v.status === 'Active');
-    const resolvedViolations = data.violations.filter(v => v.status === 'Resolved');
 
     return (
         <div className="space-y-6 max-w-4xl">
@@ -53,21 +46,17 @@ export function StudentDiscipline() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-xl shadow p-5 border-l-4 border-[#001F3F] col-span-1 md:col-span-1">
-                    <p className="text-sm text-gray-500">Total Active Demerit Points</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-xl shadow p-5 border-l-4 border-[#001F3F]">
+                    <p className="text-sm text-gray-500">Total Demerit Points</p>
                     <p className="text-5xl font-black text-[#001F3F] mt-1">{data.totalPoints}</p>
                     <span className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-semibold ${warn.color} ${warn.text}`}>
                         {warn.label}
                     </span>
                 </div>
                 <div className="bg-white rounded-xl shadow p-5 border-l-4 border-red-500">
-                    <p className="text-sm text-gray-500">Active Violations</p>
-                    <p className="text-4xl font-bold text-red-600 mt-1">{activeViolations.length}</p>
-                </div>
-                <div className="bg-white rounded-xl shadow p-5 border-l-4 border-green-500">
-                    <p className="text-sm text-gray-500">Resolved Violations</p>
-                    <p className="text-4xl font-bold text-green-600 mt-1">{resolvedViolations.length}</p>
+                    <p className="text-sm text-gray-500">Total Violations</p>
+                    <p className="text-4xl font-bold text-red-600 mt-1">{data.violations.length}</p>
                 </div>
             </div>
 
@@ -105,7 +94,6 @@ export function StudentDiscipline() {
                                     <th className="px-6 py-4">Violation</th>
                                     <th className="px-6 py-4">Points</th>
                                     <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Notes</th>
                                 </tr>
                             </thead>
@@ -121,21 +109,13 @@ export function StudentDiscipline() {
                                             <div className="font-medium text-gray-800">{v.offense}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`font-bold ${v.status === 'Active' ? 'text-red-600' : 'text-gray-400 line-through'}`}>
+                                            <span className="font-bold text-red-600">
                                                 {v.points}
                                             </span>
                                             <span className="text-gray-400 text-xs ml-1">pts</span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 text-xs">
                                             {moment(v.dateOfOffense).format('MMM DD, YYYY')}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[v.status]}`}>
-                                                {v.status === 'Active'
-                                                    ? <AlertTriangle className="w-3 h-3" />
-                                                    : <CheckCircle className="w-3 h-3" />}
-                                                {v.status}
-                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 text-xs italic max-w-xs truncate">
                                             {v.notes || '—'}
