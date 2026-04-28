@@ -110,8 +110,8 @@ export function DisciplineManagement() {
 
     const fetchStudents = async () => {
         try {
-            const res = await axios.get('/api/users?role=student');
-            setStudents(res.data.users || res.data);
+            const res = await axios.get('/api/students');
+            setStudents(res.data);
         } catch { /* silently fail */ }
     };
 
@@ -438,11 +438,9 @@ export function DisciplineManagement() {
                                     <option key={o.offense} value={o.offense}>{o.offense} ({o.points} pts)</option>
                                 ))}
                             </select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="vPoints">Demerit Points</Label>
-                            <Input id="vPoints" type="number" min="0" value={formData.points}
-                                onChange={e => setFormData(f => ({ ...f, points: Number(e.target.value) }))} required />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Demerit points: <span className="font-semibold text-[#001F3F]">{formData.points} pts</span> (auto-set by offense)
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="vNotes">Notes (optional)</Label>

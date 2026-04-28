@@ -116,6 +116,22 @@ export function AttendanceManagement() {
     }
   };
 
+  // Auto-deduct 3 demerit points when a student is marked as late
+  const recordLateDeduction = async (studentId: string) => {
+    try {
+      await axios.post('/api/violations', {
+        student: studentId,
+        offenseLevel: 'Level 1',
+        offense: 'Failure to register in the Logbook/Attendance',
+        points: 3,
+        dateOfOffense: new Date().toISOString().split('T')[0],
+        notes: 'Auto-deducted: Student checked in late (after 9:00 PM curfew)',
+      });
+    } catch (err) {
+      console.error('Failed to auto-record late demerit:', err);
+    }
+  };
+
   const processAttendanceAction = async (studentId: string, studentName: string) => {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -182,10 +198,18 @@ export function AttendanceManagement() {
       await recordAttendance(studentId, today, type, targetSession, existingLogId);
 
       const status = type === 'check_in' ? getStatusBasedOnTime(new Date()) : (targetLog?.status || 'present');
+
+      // Auto-deduct 3 demerit points if student checks in late
+      if (type === 'check_in' && status === 'late') {
+        await recordLateDeduction(studentId);
+      }
+
       Swal.fire(
         'Success',
-        `${type === 'check_in' ? `Check-In Recorded (${status.toUpperCase()})` : 'Check-Out Recorded'} for ${targetSession} session (${studentName})`,
-        'success'
+        `${type === 'check_in' ? `Check-In Recorded (${status.toUpperCase()})` : 'Check-Out Recorded'} for ${targetSession} session (${studentName})${
+          type === 'check_in' && status === 'late' ? '\n⚠️ 3 demerit points deducted for late check-in.' : ''
+        }`,
+        status === 'late' && type === 'check_in' ? 'warning' : 'success'
       );
     } catch (error: any) {
       console.error('Attendance Error', error);
