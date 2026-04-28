@@ -88,9 +88,8 @@ export function AttendanceManagement() {
   const recordAttendance = async (studentId: string, date: string, type: 'check_in' | 'check_out', targetSession: string, logId?: string) => {
     try {
       const now = new Date();
-      const status = type === 'check_in' ? getStatusBasedOnTime(now) : 'present'; // Default to present/late logic
+      const status = type === 'check_in' ? getStatusBasedOnTime(now) : 'present';
 
-      // Backend expects 'student', 'date', 'session', 'timeIn', 'timeOut'
       const payload: any = {
         student: studentId,
         date: date,
@@ -102,7 +101,6 @@ export function AttendanceManagement() {
         payload.status = status;
       } else {
         payload.timeOut = now;
-        // Do not update status on check-out, preserve original check-in status
       }
 
       if (logId) {
@@ -110,7 +108,9 @@ export function AttendanceManagement() {
       } else {
         await axios.post('/api/attendance', payload);
       }
-      await fetchAttendance(selectedDate, selectedSession);
+      // Refresh using the session where the record was saved so it appears immediately
+      await fetchAttendance(selectedDate, targetSession);
+      return status;
     } catch (error: any) {
       throw error;
     }
@@ -134,10 +134,12 @@ export function AttendanceManagement() {
 
   const processAttendanceAction = async (studentId: string, studentName: string) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Use local date (not UTC) to avoid timezone issues
+      const nowLocal = new Date();
+      const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
 
       if (selectedSession === 'final') {
-        const currentHour = new Date().getHours();
+        const currentHour = nowLocal.getHours();
         if (currentHour < 20) {
             Swal.fire('Not Available', 'Present attendance can only be recorded after 8:00 PM.', 'warning');
             return;
@@ -155,8 +157,14 @@ export function AttendanceManagement() {
             return;
         }
 
-        await recordAttendance(studentId, today, 'check_in', 'final');
-        Swal.fire('Success', `Present Attendance Recorded for ${studentName}`, 'success');
+        const finalStatus = await recordAttendance(studentId, today, 'check_in', 'final');
+        // Auto-deduct 3 points if late (after 9 PM)
+        if (finalStatus === 'late') {
+          await recordLateDeduction(studentId);
+          Swal.fire('Recorded', `Present Attendance Recorded for ${studentName}\n⚠️ 3 demerit points deducted for late check-in (after 9 PM).`, 'warning');
+        } else {
+          Swal.fire('Success', `Present Attendance Recorded for ${studentName}`, 'success');
+        }
         return;
       }
 
@@ -195,9 +203,12 @@ export function AttendanceManagement() {
         return;
       }
 
-      await recordAttendance(studentId, today, type, targetSession, existingLogId);
+      const recordedStatus = await recordAttendance(studentId, today, type, targetSession, existingLogId);
 
-      const status = type === 'check_in' ? getStatusBasedOnTime(new Date()) : (targetLog?.status || 'present');
+      const status = type === 'check_in' ? (recordedStatus || 'present') : (targetLog?.status || 'present');
+
+      // Switch tab to the session just recorded so admin sees the status immediately
+      setSelectedSession(targetSession);
 
       // Auto-deduct 3 demerit points if student checks in late
       if (type === 'check_in' && status === 'late') {
@@ -205,9 +216,9 @@ export function AttendanceManagement() {
       }
 
       Swal.fire(
-        'Success',
+        type === 'check_in' && status === 'late' ? 'Late Check-In' : 'Success',
         `${type === 'check_in' ? `Check-In Recorded (${status.toUpperCase()})` : 'Check-Out Recorded'} for ${targetSession} session (${studentName})${
-          type === 'check_in' && status === 'late' ? '\n⚠️ 3 demerit points deducted for late check-in.' : ''
+          type === 'check_in' && status === 'late' ? '\n⚠️ 3 demerit points deducted for late check-in (after 9 PM).' : ''
         }`,
         status === 'late' && type === 'check_in' ? 'warning' : 'success'
       );
@@ -257,14 +268,13 @@ export function AttendanceManagement() {
     const tableColumn = ["Student Name", "Room", "Check-In", "Check-Out", "Status"];
     const tableRows: any[] = [];
 
-    filteredAttendance.forEach(log => {
-      const student = typeof log.student === 'string' ? null : log.student;
+    filteredCombined.forEach(record => {
       const rowData = [
-        student?.name || 'Unknown',
-        student?.studentProfile?.roomNumber || 'N/A',
-        formatTime(log.timeIn) || '--',
-        formatTime(log.timeOut) || '--',
-        log.status.toUpperCase()
+        record.name || 'Unknown',
+        record.roomNumber || 'N/A',
+        formatTime(record.timeIn) || '--',
+        formatTime(record.timeOut) || '--',
+        record.status.toUpperCase()
       ];
       tableRows.push(rowData);
     });
@@ -282,15 +292,14 @@ export function AttendanceManagement() {
 
   const exportToCSV = () => {
     const headers = ["Student Name", "Room", "Check-In Date", "Check-In Time", "Check-Out Time", "Status"];
-    const rows = filteredAttendance.map(log => {
-      const student = typeof log.student === 'string' ? null : log.student;
+    const rows = filteredCombined.map(record => {
       return [
-        student?.name || 'Unknown',
-        student?.studentProfile?.roomNumber || 'N/A',
-        moment(log.date).format('YYYY-MM-DD'),
-        formatTime(log.timeIn) || '--',
-        formatTime(log.timeOut) || '--',
-        log.status
+        record.name || 'Unknown',
+        record.roomNumber || 'N/A',
+        selectedDate,
+        formatTime(record.timeIn) || '--',
+        formatTime(record.timeOut) || '--',
+        record.status
       ];
     });
 
