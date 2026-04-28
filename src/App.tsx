@@ -23,6 +23,8 @@ import { PendingValidation } from './components/PendingValidation';
 import { SystemSettings } from './components/SystemSettings';
 import { ErrorPage } from './components/ErrorPage';
 import { PassManagement } from './components/PassManagement';
+import { DisciplineManagement } from './components/DisciplineManagement';
+import { StudentDiscipline } from './components/StudentDiscipline';
 
 
 
@@ -113,6 +115,8 @@ function AppContent() {
           return <SystemSettings />;
         case 'passes':
           return <PassManagement />;
+        case 'discipline':
+          return <DisciplineManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
@@ -134,6 +138,8 @@ function AppContent() {
           return <TaskManagement />;
         case 'passes':
           return <PassManagement />;
+        case 'discipline':
+          return <DisciplineManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
@@ -155,6 +161,8 @@ function AppContent() {
           return <AnnouncementsManagement />;
         case 'passes':
           return <PassManagement />;
+        case 'discipline':
+          return <StudentDiscipline />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }

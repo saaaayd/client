@@ -16,7 +16,8 @@ import {
   BedDouble,
   UserCheck,
   Settings as SettingsIcon,
-  Ticket
+  Ticket,
+  ShieldAlert
 } from 'lucide-react';
 import Notifications from './Notifications';
 import { FeedbackModal } from './FeedbackModal';
@@ -50,6 +51,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'payments', label: 'Payments', icon: PhilippinePeso },
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'passes', label: 'Passes', icon: Ticket },
+    { id: 'discipline', label: 'Discipline', icon: ShieldAlert },
     { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'rooms', label: 'Room', icon: BedDouble },
     { id: 'students', label: 'User', icon: Users },
@@ -64,6 +66,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'payments', label: 'My Payments', icon: PhilippinePeso },
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'passes', label: 'Passes', icon: Ticket },
+    { id: 'discipline', label: 'Discipline', icon: ShieldAlert },
     { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ];
@@ -72,6 +75,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'passes', label: 'Passes', icon: Ticket },
+    { id: 'discipline', label: 'Discipline', icon: ShieldAlert },
     { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'rooms', label: 'Room', icon: BedDouble },
     { id: 'students', label: 'User', icon: Users },
