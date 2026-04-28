@@ -19,6 +19,7 @@ import {
   Ticket
 } from 'lucide-react';
 import Notifications from './Notifications';
+import { FeedbackModal } from './FeedbackModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,16 @@ interface LayoutProps {
 export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const { user, logout } = useAuth();
   const [fabExpanded, setFabExpanded] = useState(false);
+  const [showLogoutFeedback, setShowLogoutFeedback] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutFeedback(true);
+  };
+
+  const executeLogout = () => {
+    setShowLogoutFeedback(false);
+    logout();
+  };
 
   const adminMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -110,7 +121,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
             </div>
           </button>
           <button
-            onClick={logout}
+            onClick={handleLogoutClick}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
           >
             <LogOut className="w-5 h-5" />
@@ -209,8 +220,8 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
           {/* Logout Option in FAB */}
           <button
             onClick={() => {
-              logout();
               setFabExpanded(false);
+              handleLogoutClick();
             }}
             className="flex items-center gap-3 px-4 py-2 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 bg-gray-600 text-white"
             style={{ transitionDelay: `${(menuItems.length + 2) * 40}ms` }}
@@ -232,6 +243,13 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
           {fabExpanded ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
         </button>
       </div>
+
+      <FeedbackModal
+        isOpen={showLogoutFeedback}
+        onClose={() => setShowLogoutFeedback(false)}
+        context="logout"
+        onSkip={executeLogout}
+      />
     </div>
   );
 }

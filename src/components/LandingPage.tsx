@@ -3,6 +3,7 @@ import { Hero } from './landing/Hero';
 import { Features } from './landing/Features';
 import { About } from './landing/About';
 import { LocationSection } from './landing/LocationSection';
+import { Testimonials } from './landing/Testimonials';
 import { Footer } from './landing/Footer';
 
 interface LandingPageProps {
@@ -17,6 +18,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 <Hero onGetStarted={onGetStarted} />
                 <About />
                 <Features />
+                <Testimonials />
                 <LocationSection />
             </main>
             <Footer />
