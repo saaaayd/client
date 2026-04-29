@@ -41,7 +41,7 @@ export function Testimonials() {
   }
 
   return (
-    <section className="py-24 bg-gradient-to-b from-white to-gray-50">
+    <section id="feedbacks" className="py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl font-bold text-[#001F3F] mb-4">
@@ -73,22 +73,9 @@ export function Testimonials() {
                   />
                 ))}
               </div>
-              <blockquote className="text-gray-700 italic mb-6 relative z-10 min-h-[80px]">
+              <blockquote className="text-gray-700 italic relative z-10 min-h-[80px]">
                 "{feedback.comment}"
               </blockquote>
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="w-12 h-12 bg-[#001F3F] text-white rounded-full flex items-center justify-center font-bold text-lg">
-                  {feedback.user.firstName ? feedback.user.firstName[0] : (feedback.user.name ? feedback.user.name[0] : 'U')}
-                </div>
-                <div>
-                  <p className="font-semibold text-[#001F3F]">
-                    {feedback.user.firstName || feedback.user.name || 'Anonymous'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(feedback.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
             </div>
           ))}
         </div>

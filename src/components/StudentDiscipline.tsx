@@ -28,7 +28,7 @@ export function StudentDiscipline() {
     };
 
     const getWarningLevel = (pts: number) => {
-        if (pts >= 20) return { label: 'Critical – Risk of Dismissal', color: 'bg-red-600', text: 'text-white' };
+        if (pts >= 15) return { label: 'Critical – Risk of Dismissal', color: 'bg-red-600', text: 'text-white' };
         if (pts >= 10) return { label: 'Warning – High Demerit Points', color: 'bg-orange-500', text: 'text-white' };
         if (pts >= 5) return { label: 'Caution – Moderate Demerit Points', color: 'bg-yellow-400', text: 'text-[#001F3F]' };
         return { label: 'Good Standing', color: 'bg-green-500', text: 'text-white' };
@@ -37,7 +37,7 @@ export function StudentDiscipline() {
     const warn = getWarningLevel(data.totalPoints);
 
     return (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 w-full">
             <div>
                 <h2 className="text-[#001F3F] text-2xl font-bold flex items-center gap-2">
                     <ShieldAlert className="w-6 h-6 text-red-600" /> My Discipline Record
@@ -46,7 +46,7 @@ export function StudentDiscipline() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl shadow p-5 border-l-4 border-[#001F3F]">
                     <p className="text-sm text-gray-500">Total Demerit Points</p>
                     <p className="text-5xl font-black text-[#001F3F] mt-1">{data.totalPoints}</p>
@@ -57,6 +57,13 @@ export function StudentDiscipline() {
                 <div className="bg-white rounded-xl shadow p-5 border-l-4 border-red-500">
                     <p className="text-sm text-gray-500">Total Violations</p>
                     <p className="text-4xl font-bold text-red-600 mt-1">{data.violations.length}</p>
+                </div>
+                <div className="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
+                    <p className="text-sm text-gray-500">Points Until Dismissal</p>
+                    <p className="text-4xl font-bold text-orange-600 mt-1">{Math.max(0, 15 - data.totalPoints)}</p>
+                    <span className="inline-block mt-3 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                        Max: 15 pts
+                    </span>
                 </div>
             </div>
 

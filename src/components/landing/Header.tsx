@@ -32,6 +32,12 @@ export function Header({ onGetStarted }: { onGetStarted: () => void }) {
                         <a href="#about" className="text-white/90 hover:text-white transition-colors font-medium">
                             About
                         </a>
+                        <a href="#feedbacks" className="text-white/90 hover:text-white transition-colors font-medium">
+                            Feedbacks
+                        </a>
+                        <a href="#location" className="text-white/90 hover:text-white transition-colors font-medium">
+                            Location
+                        </a>
                         <a href="#contact" className="text-white/90 hover:text-white transition-colors font-medium">
                             Contact
                         </a>
@@ -68,6 +74,20 @@ export function Header({ onGetStarted }: { onGetStarted: () => void }) {
                                 onClick={handleMobileLinkClick}
                             >
                                 About
+                            </a>
+                            <a
+                                href="#feedbacks"
+                                className="text-2xl text-white font-medium hover:text-[#FFD700] transition-colors"
+                                onClick={handleMobileLinkClick}
+                            >
+                                Feedbacks
+                            </a>
+                            <a
+                                href="#location"
+                                className="text-2xl text-white font-medium hover:text-[#FFD700] transition-colors"
+                                onClick={handleMobileLinkClick}
+                            >
+                                Location
                             </a>
                             <a
                                 href="#contact"

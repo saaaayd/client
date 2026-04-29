@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
@@ -17,7 +19,8 @@ import {
   UserCheck,
   Settings as SettingsIcon,
   Ticket,
-  ShieldAlert
+  ShieldAlert,
+  MessageSquare
 } from 'lucide-react';
 import Notifications from './Notifications';
 import { FeedbackModal } from './FeedbackModal';
@@ -34,11 +37,34 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   const [showLogoutFeedback, setShowLogoutFeedback] = useState(false);
 
   const handleLogoutClick = () => {
-    if (user?.role === 'student') {
-      setShowLogoutFeedback(true);
-    } else {
-      executeLogout();
-    }
+    Swal.fire({
+      title: 'Logout',
+      text: "Are you sure you want to logout?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#001F3F',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout',
+      returnFocus: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        if (user?.role === 'student') {
+          try {
+            const res = await axios.get('/api/feedback/status');
+            if (res.data.hasSubmitted) {
+              executeLogout();
+            } else {
+              setShowLogoutFeedback(true);
+            }
+          } catch (error) {
+            console.error('Error checking feedback status', error);
+            executeLogout();
+          }
+        } else {
+          executeLogout();
+        }
+      }
+    });
   };
 
   const executeLogout = () => {
@@ -57,6 +83,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'students', label: 'User', icon: Users },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'logs', label: 'System Logs', icon: ShieldCheck },
+    { id: 'feedback', label: 'Feedback', icon: MessageSquare },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
     ...(user?.role === 'admin' ? [{ id: 'settings', label: 'Settings', icon: SettingsIcon }] : [])
   ];
@@ -79,6 +106,7 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
     { id: 'tasks', label: 'Task', icon: Calendar },
     { id: 'rooms', label: 'Room', icon: BedDouble },
     { id: 'students', label: 'User', icon: Users },
+    { id: 'feedback', label: 'Feedback', icon: MessageSquare },
     { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   ];
 

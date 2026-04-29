@@ -50,8 +50,12 @@ export function FeedbackModal({ isOpen, onClose, context, onSkip }: FeedbackModa
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleSkip}>
-      <DialogContent className="sm:max-w-md bg-white">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleSkip(); }}>
+      <DialogContent 
+        className="sm:max-w-md bg-white"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="flex justify-between items-center">
             <DialogTitle className="text-xl font-bold text-[#001F3F]">

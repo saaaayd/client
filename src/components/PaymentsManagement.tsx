@@ -800,14 +800,7 @@ export function PaymentsManagement() {
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            <div>
-              <Label>Reference / Receipt #</Label>
-              <Input
-                value={formData.referenceNumber}
-                onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
-                placeholder="e.g. OR-12345"
-              />
-            </div>
+
             <div>
               <Label>Notes</Label>
               <Textarea
@@ -873,14 +866,7 @@ export function PaymentsManagement() {
                       onChange={(e) => updateBulkRow(idx, 'amount', e.target.value)}
                     />
                   </div>
-                  <div>
-                    <Label>Reference #</Label>
-                    <Input
-                      value={(row as any).referenceNumber || ''}
-                      onChange={(e) => updateBulkRow(idx, 'referenceNumber', e.target.value)}
-                      placeholder="e.g. OR-12345"
-                    />
-                  </div>
+
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>

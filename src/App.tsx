@@ -25,6 +25,7 @@ import { ErrorPage } from './components/ErrorPage';
 import { PassManagement } from './components/PassManagement';
 import { DisciplineManagement } from './components/DisciplineManagement';
 import { StudentDiscipline } from './components/StudentDiscipline';
+import { FeedbackManagement } from './components/FeedbackManagement';
 
 
 
@@ -117,6 +118,8 @@ function AppContent() {
           return <PassManagement />;
         case 'discipline':
           return <DisciplineManagement />;
+        case 'feedback':
+          return <FeedbackManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
@@ -140,6 +143,8 @@ function AppContent() {
           return <PassManagement />;
         case 'discipline':
           return <DisciplineManagement />;
+        case 'feedback':
+          return <FeedbackManagement />;
         default:
           return <ErrorPage code="404" title="PAGE NOT FOUND" onAction={() => setCurrentPage('dashboard')} />;
       }
